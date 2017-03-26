@@ -1,0 +1,58 @@
+TARGET=hash_sum
+CC=cc
+LD=cc
+CPPFLAGS="-I../.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
+CFLAGS="-Wall -Werror=implicit-function-declaration"
+LDFLAGS=""
+
+[ -z "$FEATURES" ] && FEATURES="debug"
+
+SOURCES="
+../../crypto/md5.c
+../../crypto/sha1.c
+../../crypto/sha256.c
+../../crypto/sha512.c
+../../crypto/sha3.c
+../../crypto/streebog.c
+hash_sum.c
+"
+
+unset use_debug use_release
+
+CFLAGS_RELEASE="-O3 -fomit-frame-pointer"
+LDFLAGS_RELEASE=""
+
+CFLAGS_DEBUG="-g"
+LDFLAGS_DEBUG="-g"
+
+for feat in $FEATURES ; do
+ case $feat in
+  "debug")
+    use_debug=1
+    ;;
+  "release")
+    use_release=1
+    ;;
+  *)
+    echo "Unknown feature $feat"
+    exit 1
+    ;;
+ esac
+done
+
+if [ -n "$use_debug" ]; then
+ CONFIG="DEBUG"
+ CFLAGS="$CFLAGS $CFLAGS_DEBUG"
+ LDFLAGS="$LDFLAGS $LDFLAGS_DEBUG"
+ TARGET="$TARGET-dbg"
+else
+ if [ -z "$use_release" ]; then
+  echo 'Use FEATURES="release" or FEATURES="debug"'
+  exit 1
+ fi
+ CONFIG="RELEASE"
+ CFLAGS="$CFLAGS $CFLAGS_RELEASE"
+ LDFLAGS="$LDFLAGS $LDFLAGS_RELEASE"
+fi
+
+unset feat use_debug use_release

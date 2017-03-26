@@ -1,0 +1,70 @@
+TARGET=gen_prime
+CC=cc
+LD=c++
+AS=nasm
+CXX=c++
+CFLAGS="-Wall"
+CXXFLAGS="-Wall -std=gnu++11"
+CPPFLAGS="-I../.. -I../../../bigint"
+LDFLAGS="-lpthread -L../../../bigint/bigint"
+ASFLAGS="-f elf64"
+
+[ -z "$FEATURES" ] && FEATURES="debug"
+
+SOURCES="
+main.cpp
+../../crypto/rng/fake_random.cpp
+../../crypto/utils/random_range.cpp
+../../crypto/utils/gen_prime.cpp
+../../crypto/rng/sys_random_unix.cpp
+../../crypto/rng/std_random.cpp
+../../crypto/rng/isaac.c
+../../crypto/sha512.c
+../../cpuid/cpu_features.c
+../../crypto/x86_64-gcc/rdrand.asm
+"
+
+unset use_debug use_release
+
+CFLAGS_RELEASE="-O3 -fomit-frame-pointer"
+CXXLAGS_RELEASE="-O3 -fomit-frame-pointer"
+LDFLAGS_RELEASE="-lbigint"
+
+CFLAGS_DEBUG="-g"
+CXXFLAGS_DEBUG="-g"
+LDFLAGS_DEBUG="-g -lbigint-dbg"
+
+for feat in $FEATURES ; do
+ case $feat in
+  "debug")
+    use_debug=1
+    ;;
+  "release")
+    use_release=1
+    ;;
+  *)
+    echo "Unknown feature $feat"
+    exit 1
+    ;;
+ esac
+done
+
+if [ -n "$use_debug" ]; then
+ CONFIG="DEBUG"
+ CFLAGS="$CFLAGS $CFLAGS_DEBUG"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DEBUG"
+ LDFLAGS="$LDFLAGS $LDFLAGS_DEBUG"
+ TARGET="$TARGET-dbg"
+else
+ if [ -z "$use_release" ]; then
+  echo 'Use FEATURES="release" or FEATURES="debug"'
+  exit 1
+ fi
+ CONFIG="RELEASE"
+ CFLAGS="$CFLAGS $CFLAGS_RELEASE"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_RELEASE"
+ LDFLAGS="$LDFLAGS $LDFLAGS_RELEASE"
+ CPPFLAGS="$CPPFLAGS -DNDEBUG"
+fi
+
+unset feat use_debug use_release

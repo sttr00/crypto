@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="asm">
+      <UniqueIdentifier>{a3aa71df-ac48-4558-ab8c-16821a069ca6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="asm\x86">
+      <UniqueIdentifier>{da4ac0c0-18fe-459d-9312-0da2546ccbd5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="asm\x86_64">
+      <UniqueIdentifier>{b7c40491-6325-4fef-b767-20d914d58ea8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="crypto">
+      <UniqueIdentifier>{0d75989c-0a10-4f6c-a6ad-f88fc4ad3a15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpuid">
+      <UniqueIdentifier>{3750a380-5d88-44be-b9e8-d3c42f14a71a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rng">
+      <UniqueIdentifier>{8153f36e-4571-431a-81ff-1bf6221f4981}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{4cc9b1db-fb84-485d-8d2e-e485f0e2522b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\crypto\sha512.c">
+      <Filter>crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cpuid\cpu_features.c">
+      <Filter>cpuid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\rng\fake_random.cpp">
+      <Filter>rng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\rng\isaac.c">
+      <Filter>rng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\rng\std_random.cpp">
+      <Filter>rng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\rng\sys_random_win.cpp">
+      <Filter>rng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\utils\gen_prime.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\utils\random_range.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\crypto\sha512.h">
+      <Filter>crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cpuid\cpu_features.h">
+      <Filter>cpuid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\fake_random.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\isaac.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\random_gen.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\std_random.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\sys_random.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\sys_random_win.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\rng\thread_safe_random.h">
+      <Filter>rng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\utils\gen_prime.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\utils\random_range.h">
+      <Filter>utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\crypto\x86\rdrand.asm">
+      <Filter>asm\x86</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\crypto\x86_64-ms\rdrand.asm">
+      <Filter>asm\x86_64</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>
