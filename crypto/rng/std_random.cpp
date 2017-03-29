@@ -76,7 +76,7 @@ static bool get_sys_random(void *buf, size_t size)
  #ifndef GRND_RANDOM
  #define GRND_RANDOM 2
  #endif
- long result = syscall(__NR_getrandom, buf, size, GRND_RANDOM)
+ long result = syscall(__NR_getrandom, buf, size, GRND_RANDOM);
  if (result == size) return true;
  if (result < 0 && errno != ENOSYS) return false;
  #endif
@@ -272,7 +272,7 @@ bool std_random::get_secure_random(void *out, size_t size)
   sys_word_t sw[TEMP_BUF_SIZE/sizeof(sys_word_t)];
   uint8_t b[TEMP_BUF_SIZE];
  } temp;
- size_t i, size_rem;
+ size_t size_rem;
  #endif
  ptr = (ptr + sizeof(sys_word_t) - 1) & ~(sizeof(sys_word_t) - 1);
  if (ptr >= BUF_BYTES)
@@ -282,7 +282,7 @@ bool std_random::get_secure_random(void *out, size_t size)
  }
  #ifdef HAVE_UNALIGNED_ACCESS
  if (!sys.get_secure_random(out, size)) return false;
- while (size)
+ while (size >= sizeof(sys_word_t))
  {
   *((sys_word_t *) out) ^= buf.sw[ptr/sizeof(sys_word_t)];
   ptr += sizeof(sys_word_t);
@@ -294,11 +294,14 @@ bool std_random::get_secure_random(void *out, size_t size)
   out = (uint8_t *) out + sizeof(sys_word_t);
   size -= sizeof(sys_word_t);
  }
+ for (size_t i = 0; i < size; i++)
+  ((uint8_t *) out)[i] ^= buf.b[ptr + i];
+ ptr += size;
  #else 
  while (size >= TEMP_BUF_SIZE)
  {
   if (!sys.get_secure_random(temp.sw, TEMP_BUF_SIZE)) return false;
-  for (i = 0; i < TEMP_BUF_SIZE; i += sizeof(sys_word_t))
+  for (size_t i = 0; i < TEMP_BUF_SIZE; i += sizeof(sys_word_t))
   {
    put_unaligned_w(out, temp.sw[i/sizeof(sys_word_t)] ^ buf.sw[ptr/sizeof(sys_word_t)]);
    ptr += sizeof(sys_word_t);
@@ -316,7 +319,7 @@ bool std_random::get_secure_random(void *out, size_t size)
  if (size)
  {
   if (!sys.get_secure_random(temp.sw, size)) return false;
-  for (i = 0; i < size; i += sizeof(sys_word_t))
+  for (size_t i = 0; i < size; i += sizeof(sys_word_t))
   {
    put_unaligned_w(out, temp.sw[i/sizeof(sys_word_t)] ^ buf.sw[ptr/sizeof(sys_word_t)]);
    ptr += sizeof(sys_word_t);
@@ -331,7 +334,7 @@ bool std_random::get_secure_random(void *out, size_t size)
  if (size_rem)
  {
   if (!sys.get_secure_random(temp.b, size_rem)) return false;
-  for (i = 0; i < size_rem; i++)
+  for (size_t i = 0; i < size_rem; i++)
    ((uint8_t *) out)[i] = temp.b[i] ^ buf.b[ptr + i];
   ptr += (unsigned) size_rem;
  }
