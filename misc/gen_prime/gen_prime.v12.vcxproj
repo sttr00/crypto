@@ -73,8 +73,8 @@
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{0D98A359-3B37-4459-9ED5-0EFB1DA13D0C}</ProjectGuid>
-    <RootNamespace>expr</RootNamespace>
+    <ProjectGuid>{034D4B85-1763-4F17-94BB-8FAA339AD667}</ProjectGuid>
+    <RootNamespace>gen_prime</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -165,26 +165,28 @@ const void *HASH_FUNC_FINAL(void *pctx)
   ptr += HASH_WORD_SIZE;
  }
  #ifdef HASH_HAS_TOTAL_SIZE
- if (ptr == HASH_BLOCK_SIZE)
+ if (ptr > HASH_BLOCK_SIZE-2*HASH_WORD_SIZE)
  {
-  #ifdef HASH_FUNC_FINAL_COMPRESS
-  HASH_FUNC_FINAL_COMPRESS(ctx, ctx->buf.w);
-  #else
+  while (ptr < HASH_BLOCK_SIZE)
+  {
+   ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
+   ptr += HASH_WORD_SIZE;
+  }
   HASH_FUNC_COMPRESS(ctx, ctx->buf.w);
-  #endif
   ptr = 0;
  }
- #define TAIL_SIZE 8
- #else
- #define TAIL_SIZE 0
- #endif
- while (ptr < HASH_BLOCK_SIZE-TAIL_SIZE)
+ while (ptr < HASH_BLOCK_SIZE-8)
  {
   ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
   ptr += HASH_WORD_SIZE;
  }
- #ifdef HASH_HAS_TOTAL_SIZE
  put_unaligned64(ctx->buf.b + HASH_BLOCK_SIZE - 8, HASH_VALUE64(bits));
+ #else
+ while (ptr < HASH_BLOCK_SIZE)
+ {
+  ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
+  ptr += HASH_WORD_SIZE;
+ }
  #endif
  #ifdef HASH_PAD_END
  /* only used by SHA3 */

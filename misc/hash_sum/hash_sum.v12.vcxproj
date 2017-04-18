@@ -66,9 +66,10 @@
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{0D98A359-3B37-4459-9ED5-0EFB1DA13D0C}</ProjectGuid>
-    <RootNamespace>expr</RootNamespace>
+    <ProjectGuid>{15751621-1B6B-4799-A485-4692669BDB4B}</ProjectGuid>
+    <RootNamespace>hash_sum</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>hash_sum</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
