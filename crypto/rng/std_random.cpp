@@ -14,7 +14,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#ifdef linux
+#if defined(linux) || defined(__linux__)
 #include <sys/syscall.h>
 #include <sys/sysinfo.h>
 #include <errno.h>
@@ -72,16 +72,12 @@ struct _SYSTEM_TIMEOFDAY_INFORMATION
 #if defined(unix) || defined(__unix__)
 static bool get_sys_random(void *buf, size_t size)
 {
- #if defined(linux) && defined(__NR_getrandom)
- #ifndef GRND_RANDOM
- #define GRND_RANDOM 2
- #endif
- long result = syscall(__NR_getrandom, buf, size, GRND_RANDOM);
+ #if (defined(linux) || defined(__linux__)) && defined(__NR_getrandom)
+ long result = syscall(__NR_getrandom, buf, size, 0);
  if (result == size) return true;
  if (result < 0 && errno != ENOSYS) return false;
  #endif
  sys_random rng;
- rng.set_device_name("/dev/random");
  return rng.get_random(buf, size);
 }
 #endif
@@ -198,7 +194,7 @@ void std_random::hash_entropy(void *ctx, bool first)
   uint8_t buf[32];
   if (get_sys_random(buf, sizeof(buf))) hash_update(ctx, buf, sizeof(buf));
  }
- #ifdef linux
+ #if defined(linux) || defined(__linux__)
  struct sysinfo sys;
  sysinfo(&sys);
  hash_update(ctx, &sys, sizeof(sys));
