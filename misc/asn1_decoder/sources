@@ -1,0 +1,61 @@
+TARGET=asn1_decoder
+CC=gcc
+LD=g++
+CXX=g++
+CFLAGS="-Wall"
+CXXFLAGS="-Wall -std=gnu++11"
+CPPFLAGS="-I../.."
+
+[ -z "$FEATURES" ] && FEATURES="debug"
+
+SOURCES="
+main.cpp
+../../crypto/asn1/decoder.cpp
+../../crypto/asn1/element.cpp
+../../crypto/asn1/printer.cpp
+../../crypto/utils/pem_file.cpp
+../../utils/base64.cpp
+"
+
+unset use_debug use_release
+
+CFLAGS_RELEASE="-O2 -fomit-frame-pointer"
+CXXLAGS_RELEASE="-O2 -fomit-frame-pointer"
+LDFLAGS_RELEASE=""
+
+CFLAGS_DEBUG="-g"
+CXXFLAGS_DEBUG="-g"
+LDFLAGS_DEBUG="-g"
+
+for feat in $FEATURES ; do
+ case $feat in
+  "debug")
+    use_debug=1
+    ;;
+  "release")
+    use_release=1
+    ;;
+  *)
+    echo "Unknown feature $feat"
+    exit 1
+    ;;
+ esac
+done
+
+if [ -n "$use_debug" ]; then
+ CONFIG="DEBUG"
+ CFLAGS="$CFLAGS $CFLAGS_DEBUG"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DEBUG"
+ LDFLAGS="$LDFLAGS $LDFLAGS_DEBUG"
+else
+ if [ -z "$use_release" ]; then
+  echo 'Use FEATURES="release" or FEATURES="debug"'
+  exit 1
+ fi
+ CONFIG="RELEASE"
+ CFLAGS="$CFLAGS $CFLAGS_RELEASE"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_RELEASE"
+ LDFLAGS="$LDFLAGS $LDFLAGS_RELEASE"
+fi
+
+unset feat use_debug use_release

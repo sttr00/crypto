@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="asn1">
+      <UniqueIdentifier>{0d75989c-0a10-4f6c-a6ad-f88fc4ad3a15}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\crypto\asn1\decoder.cpp">
+      <Filter>asn1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\asn1\element.cpp">
+      <Filter>asn1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\asn1\printer.cpp">
+      <Filter>asn1</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\asn1\encoder.cpp">
+      <Filter>asn1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\utils\base64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\utils\pem_file.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\crypto\asn1\decoder.h">
+      <Filter>asn1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\asn1\element.h">
+      <Filter>asn1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\asn1\printer.h">
+      <Filter>asn1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\asn1\encoder.h">
+      <Filter>asn1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\utils\base64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\utils\pem_file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
