@@ -1,4 +1,6 @@
 #include "printer.h"
+#include <utils/utf8.h>
+#include <platform/unaligned.h>
 #include <vector>
 
 using namespace asn1;
@@ -81,6 +83,31 @@ static void print_utf8_string(string &out, const element *el)
    out += hex[el->data[i]>>4];
    out += hex[el->data[i] & 0xF];
   }
+}
+
+static void print_bmp_string(string &out, const element *el)
+{
+ size_t size = el->size & ~1u;
+ for (size_t i = 0; i < size; i += 2)
+ {
+  uint16_t ch = get_unaligned16_be(el->data + i);
+  if (ch < 0x20)
+  {
+   out.append("\\x", 2);
+   out += hex[el->data[i]>>4];
+   out += hex[el->data[i] & 0xF];
+   continue;
+  }
+  if (ch == '\\')
+  {
+   out.append("\\\\", 2);
+   continue;
+  }
+  char utf_bytes[4];
+  size_t utf_size = sizeof(utf_bytes);
+  utf8::uc32_to_utf8(utf_bytes, &utf_size, ch, '?');
+  out.append(utf_bytes, utf_size);
+ }
 }
 
 static void print_oid(string &out, const element *el, bool absolute)
@@ -180,7 +207,7 @@ void asn1::print_element(string &out, const element *el)
     print_oid(out, el, false);
     out += '"';
    } else
-   if (el->tag == TYPE_OCTET_STRING || el->tag == TYPE_UNIVERSAL_STRING || el->tag == TYPE_BMP_STRING)
+   if (el->tag == TYPE_OCTET_STRING || el->tag == TYPE_UNIVERSAL_STRING)
    {
     out += " \"";
     print_hex(out, el);
@@ -207,6 +234,12 @@ void asn1::print_element(string &out, const element *el)
    {
     out += " \"";
     print_utf8_string(out, el);
+    out += '"';
+   } else
+   if (el->tag == TYPE_BMP_STRING)
+   {
+    out += " \"";
+    print_bmp_string(out, el);
     out += '"';
    }
   } else
