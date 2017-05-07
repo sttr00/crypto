@@ -1,0 +1,139 @@
+-- no-export
+pkcs-1  OBJECT IDENTIFIER  ::=
+    { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) 1 }
+
+-- no-export
+csor OBJECT IDENTIFIER ::= { 
+   joint-iso-itu-t(2) country(16) us(840) organization(1) gov(101) 3 }
+
+-- no-export
+nistAlgorithms OBJECT IDENTIFIER ::= { csor nistAlgorithm(4) }
+
+-- no-export
+hashAlgs OBJECT IDENTIFIER ::= { nistAlgorithms 2 }
+
+-- no-export
+sigAlgs OBJECT IDENTIFIER ::= { nistAlgorithms 3 }
+
+-- ---------------------
+-- public key algorithms
+-- ---------------------
+
+rsaEncryption OBJECT IDENTIFIER ::= {
+ iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1)
+ pkcs-1(1) 1 }
+
+id-dsa OBJECT IDENTIFIER ::= {
+ iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 1 }
+
+id-RSASSA-PSS  OBJECT IDENTIFIER  ::=  { pkcs-1 10 }
+
+-- ----------------
+-- hash algorithms
+-- ----------------
+
+id-md2 OBJECT IDENTIFIER ::= {
+    iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 2
+}
+
+id-md5 OBJECT IDENTIFIER ::= {
+    iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 5
+}
+
+id-sha1    OBJECT IDENTIFIER ::= {
+    iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2)
+    26
+}
+
+id-sha256 OBJECT IDENTIFIER ::= { hashAlgs 1 }
+
+id-sha384 OBJECT IDENTIFIER ::= { hashAlgs 2 }
+
+id-sha512 OBJECT IDENTIFIER ::= { hashAlgs 3 }
+
+id-sha224 OBJECT IDENTIFIER ::= { hashAlgs 4 }
+
+id-sha512-224 OBJECT IDENTIFIER ::= { hashAlgs 5 }
+
+id-sha512-256 OBJECT IDENTIFIER ::= { hashAlgs 6 }
+
+id-sha3-224 OBJECT IDENTIFIER ::= { hashAlgs 7 }
+
+id-sha3-256 OBJECT IDENTIFIER ::= { hashAlgs 8 }
+
+id-sha3-384 OBJECT IDENTIFIER ::= { hashAlgs 9 }
+
+id-sha3-512 OBJECT IDENTIFIER ::= { hashAlgs 10 }
+
+id-hash-streebog256 OBJECT IDENTIFIER ::= { 1 2 643 7 1 1 2 2 }
+id-hash-streebog512 OBJECT IDENTIFIER ::= { 1 2 643 7 1 1 2 3 }
+
+-- ---------
+-- PK + hash
+-- ---------
+
+md2WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 2 }
+md5WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 4 }
+sha1WithRSAEncryption        OBJECT IDENTIFIER ::= { pkcs-1 5 }
+sha224WithRSAEncryption      OBJECT IDENTIFIER ::= { pkcs-1 14 }
+sha256WithRSAEncryption      OBJECT IDENTIFIER ::= { pkcs-1 11 }
+sha384WithRSAEncryption      OBJECT IDENTIFIER ::= { pkcs-1 12 }
+sha512WithRSAEncryption      OBJECT IDENTIFIER ::= { pkcs-1 13 }
+sha512-224WithRSAEncryption  OBJECT IDENTIFIER ::= { pkcs-1 15 }
+sha512-256WithRSAEncryption  OBJECT IDENTIFIER ::= { pkcs-1 16 }
+
+id-rsa-with-sha3-224 OBJECT IDENTIFIER ::= { sigAlgs 13 }
+id-rsa-with-sha3-256 OBJECT IDENTIFIER ::= { sigAlgs 14 }
+id-rsa-with-sha3-384 OBJECT IDENTIFIER ::= { sigAlgs 15 }
+id-rsa-with-sha3-512 OBJECT IDENTIFIER ::= { sigAlgs 16 }
+
+dsa-with-sha1 OBJECT IDENTIFIER ::=  {
+ iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 3 }
+
+dsa-with-sha224 OBJECT IDENTIFIER  ::=  {
+ joint-iso-ccitt(2) country(16) us(840) organization(1) gov(101)
+ csor(3) algorithms(4) id-dsa-with-sha2(3) 1 }
+
+dsa-with-sha256 OBJECT IDENTIFIER  ::=  {
+ joint-iso-ccitt(2) country(16) us(840) organization(1) gov(101)
+ csor(3) algorithms(4) id-dsa-with-sha2(3) 2 }
+
+-- ----------------
+-- other algorithms
+-- ----------------
+
+id-mgf1  OBJECT IDENTIFIER  ::=  { pkcs-1 8 }
+
+-- ------------------
+-- DN attribute types
+-- ------------------
+
+-- no-export
+id-at OBJECT IDENTIFIER ::= { joint-iso-ccitt(2) ds(5) 4 }
+
+id-at-commonName             OBJECT IDENTIFIER ::= { id-at  3 }
+id-at-name                   OBJECT IDENTIFIER ::= { id-at 41 }
+id-at-surname                OBJECT IDENTIFIER ::= { id-at  4 }
+id-at-givenName              OBJECT IDENTIFIER ::= { id-at 42 }
+id-at-initials               OBJECT IDENTIFIER ::= { id-at 43 }
+id-at-generationQualifier    OBJECT IDENTIFIER ::= { id-at 44 }
+id-at-localityName           OBJECT IDENTIFIER ::= { id-at  7 }
+id-at-stateOrProvinceName    OBJECT IDENTIFIER ::= { id-at  8 }
+id-at-organizationName       OBJECT IDENTIFIER ::= { id-at 10 }
+id-at-organizationalUnitName OBJECT IDENTIFIER ::= { id-at 11 }
+id-at-title                  OBJECT IDENTIFIER ::= { id-at 12 }
+id-at-dnQualifier            OBJECT IDENTIFIER ::= { id-at 46 }
+id-at-countryName            OBJECT IDENTIFIER ::= { id-at 6 }
+id-at-serialNumber           OBJECT IDENTIFIER ::= { id-at 5 }
+id-at-pseudonym              OBJECT IDENTIFIER ::= { id-at 65 }
+
+-- RFC 4519
+id-at-domainComponent        OBJECT IDENTIFIER ::= { 0 9 2342 19200300 100 1 25 }
+
+-- Legacy attributes
+
+-- no-export
+pkcs-9 OBJECT IDENTIFIER ::=
+       { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) 9 }
+
+id-at-emailAddress          OBJECT IDENTIFIER ::= { pkcs-9 1 }

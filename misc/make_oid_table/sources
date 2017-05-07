@@ -1,0 +1,61 @@
+TARGET=make_oid_table
+CC=cc
+CXX=c++
+LD=c++
+CPPFLAGS="-I../.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
+CXXFLAGS="-Wall -std=c++11"
+LDFLAGS=""
+
+[ -z "$FEATURES" ] && FEATURES="debug"
+
+SOURCES="
+asn1_keywords.cpp
+asn1_lexer.cpp
+make_constant.cpp
+make_oid_table.cpp
+oid_parser.cpp
+oid_storage.cpp
+printer.cpp
+scanner.cpp
+token_list.cpp
+"
+
+unset use_debug use_release
+
+CFLAGS_RELEASE="-O3 -fomit-frame-pointer"
+LDFLAGS_RELEASE=""
+
+CFLAGS_DEBUG="-g"
+LDFLAGS_DEBUG="-g"
+
+for feat in $FEATURES ; do
+ case $feat in
+  "debug")
+    use_debug=1
+    ;;
+  "release")
+    use_release=1
+    ;;
+  *)
+    echo "Unknown feature $feat"
+    exit 1
+    ;;
+ esac
+done
+
+if [ -n "$use_debug" ]; then
+ CONFIG="DEBUG"
+ CFLAGS="$CFLAGS $CFLAGS_DEBUG"
+ LDFLAGS="$LDFLAGS $LDFLAGS_DEBUG"
+ TARGET="$TARGET-dbg"
+else
+ if [ -z "$use_release" ]; then
+  echo 'Use FEATURES="release" or FEATURES="debug"'
+  exit 1
+ fi
+ CONFIG="RELEASE"
+ CFLAGS="$CFLAGS $CFLAGS_RELEASE"
+ LDFLAGS="$LDFLAGS $LDFLAGS_RELEASE"
+fi
+
+unset feat use_debug use_release
