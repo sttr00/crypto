@@ -69,6 +69,8 @@ bool pem_file::decode(const void *text_data, size_t text_size, void* &bin_data, 
   {
    if (expect_what == LINE_BEGIN)
    {
+    if (found_type && start_type.empty()) *found_type = type;
+    start_type = type;
     if (required_type && *required_type != type)
     {
      pos = next_pos;
@@ -76,7 +78,6 @@ bool pem_file::decode(const void *text_data, size_t text_size, void* &bin_data, 
     }
     expect_what = LINE_END;
     data_start = next_pos;
-    start_type = type;
     pos = next_pos;
    } else
    {

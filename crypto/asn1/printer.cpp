@@ -151,7 +151,7 @@ static const char *str_classes[] =
  "UNIVERSAL", "APPLICATION", "CONTEXT SPECIFIC", "PRIVATE"
 };
 
-void asn1::print_element(string &out, const element *el)
+void asn1::print_element(string &out, const element *el, const void *start)
 {
  char tmp[256];
  const char *type = nullptr;
@@ -168,6 +168,15 @@ void asn1::print_element(string &out, const element *el)
   out.append(tmp, len);
  }
  out += el->child? " C" : " P";
+ if (start)
+ {
+  if (el->data && el->size)
+  {
+   size_t offset = el->data - static_cast<const uint8_t*>(start);
+   int len = sprintf(tmp, " %u:%u", (unsigned) offset, (unsigned) el->size);
+   out.append(tmp, len);
+  }
+ } else
  if (el->size)
  {
   int len = sprintf(tmp, " %u", (unsigned) el->size);
@@ -218,7 +227,7 @@ void asn1::print_element(string &out, const element *el)
     out += " \"";
     if (el->size)
     {
-     int len = sprintf(tmp, "%u:", el->data[0]);
+     int len = sprintf(tmp, "%u/", el->data[0]);
      out.append(tmp, len);
      print_hex(out, el, 1);
     } else out += "INVALID";
@@ -252,7 +261,7 @@ void asn1::print_element(string &out, const element *el)
  out += '\n';
 }
 
-void asn1::print_tree(string &out, const element *root)
+void asn1::print_tree(string &out, const element *root, const void *start)
 {
  vector<const element*> v;
  v.push_back(root);
@@ -265,7 +274,7 @@ void asn1::print_tree(string &out, const element *root)
    continue;
   }
   out.append(v.size()-1, ' ');
-  print_element(out, el);
+  print_element(out, el, start);
   v.back() = el->sibling;
   if (el->child) v.push_back(el->child);
  }

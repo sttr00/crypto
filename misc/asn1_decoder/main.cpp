@@ -66,7 +66,7 @@ static void decode_data(const void *buf, size_t size, unsigned decode_flags, con
  if (elem)
  {
   std::string str;
-  asn1::print_tree(str, elem);
+  asn1::print_tree(str, elem, buf);
   #ifdef ENCODE
   std::string out_file = filename;
   size_t len = out_file.length();

@@ -64,13 +64,25 @@ namespace asn1
    
    element();
    element(const void *data, size_t size);
+   element(unsigned type, const void *data = nullptr, size_t size = 0);
    ~element();
 
    static element *create();
    static element *create(const void *data, size_t size);
+   static element *create(unsigned type, const void *data = nullptr, size_t size = 0);
 
    bool get_small_uint(unsigned &val) const;
    bool get_small_int(int &val) const;   
+   bool is_valid_int() const;
+   bool is_valid_positive_int() const;
+   bool is_sequence() const;
+   bool is_obj_id() const;
+   bool is_octet_string() const;
+   bool is_aligned_bit_string() const;
+
+   element *clone_tree() const;
+   bool remove_child(element *old_child);
+   bool replace_child(element *old_child, element *new_child);
 
    element(const element &) = delete;
    element &operator= (const element &) = delete;
