@@ -185,9 +185,8 @@ void *load_input_file(const char *filename, int &size, bool use_stdin, int forma
    size = 0;
   } else
   {
-   operator delete(data);
    data = bin_data;
-   size = bin_size;  
+   size = bin_size;
   }
  }
  return data;
