@@ -14,28 +14,32 @@ int get_format(const char *fmt)
  return -1;
 }
 
-static const char *get_stdin_file_name()
+static platform::file_t get_stdin_file()
 {
 #ifdef _WIN32
- return "CON:";
+ return GetStdHandle(STD_INPUT_HANDLE);
 #else
- return "/dev/stdin";
+ return 0;
 #endif
 }
 
-static const char *get_stdout_file_name()
+static platform::file_t get_stdout_file()
 {
 #ifdef _WIN32
- return "CON:";
+ return GetStdHandle(STD_OUTPUT_HANDLE);
 #else
- return "/dev/stdout";
+ return 1;
 #endif
 }
 
 void *load_file(const char *filename, int &size, bool use_stdin)
 {
- if (use_stdin) filename = get_stdin_file_name();
- platform::file_t f = platform::open_file(filename);
+ platform::file_t f;
+ if (use_stdin)
+ {
+  filename = "stdin";
+  f = get_stdin_file();
+ } else f = platform::open_file(filename);
  if (f == platform::INVALID_FILE)
  {
   fprintf(stderr, "%s: Can't open file\n", filename);
@@ -43,7 +47,11 @@ void *load_file(const char *filename, int &size, bool use_stdin)
  }
  if (use_stdin)
  {
+  #ifdef _WIN32
+  size = 4096;
+  #else
   size = 32768;
+  #endif
  } else
  {
   uint64_t size64 = platform::get_file_size(f);
@@ -64,12 +72,12 @@ void *load_file(const char *filename, int &size, bool use_stdin)
   {
    fprintf(stderr, "%s: Read error\n", filename);
    operator delete(buf);
-   platform::close_file(f);
+   if (!use_stdin) platform::close_file(f);
    return nullptr;
   }
   out_size += rd_size;
  }
- platform::close_file(f);
+ if (!use_stdin) platform::close_file(f);
  size = out_size;
  return buf;
 }
@@ -152,7 +160,7 @@ void *load_input_file(const char *filename, int &size, bool use_stdin, int forma
   void *bin_data;
   if (!pem_file::decode(data, size, bin_data, bin_size, nullptr, out_type, &pos, &error))
   {
-   if (use_stdin) filename = get_stdin_file_name();
+   if (use_stdin) filename = "stdin";
    fprintf(stderr, "%s: PEM decoding error %d\n", filename, error);
    operator delete(data);
    data = nullptr;
@@ -187,13 +195,14 @@ void *load_input_file(const char *filename, int &size, bool use_stdin, int forma
 
 bool save_output_file(const char *filename, const void *data, int size, bool use_stdout, int format, const char *pem_type)
 {
+ platform::file_t f;
  if (use_stdout)
  {
   fflush(stdout);
-  filename = get_stdout_file_name();
- }
- platform::file_t f = platform::create_file(filename);
- if (!f)
+  filename = "stdout";
+  f = get_stdout_file();
+ } else f = platform::create_file(filename);
+ if (f == platform::INVALID_FILE)
  {
   fprintf(stderr, "%s: Can't create file\n", filename);
   return false;
@@ -251,7 +260,7 @@ bool save_output_file(const char *filename, const void *data, int size, bool use
  {
   platform::write_file(f, data, size);
  }
- platform::close_file(f);
+ if (!use_stdout) platform::close_file(f);
  return true;
 }
 
