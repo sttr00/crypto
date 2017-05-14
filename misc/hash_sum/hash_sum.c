@@ -1,9 +1,5 @@
-#include <crypto/md5.h>
-#include <crypto/sha1.h>
-#include <crypto/sha256.h>
-#include <crypto/sha512.h>
-#include <crypto/sha3.h>
-#include <crypto/streebog.h>
+#include <crypto/hash_factory.h>
+#include <crypto/oid_const.h>
 #include <platform/file.h>
 #include <platform/alloca.h>
 #include <platform/timestamp.h>
@@ -14,109 +10,36 @@
 
 #define countof(a) (sizeof(a)/sizeof(a[0]))
 
-enum
-{
- HASH_ALG_NONE        = 0,
- HASH_ALG_MD5         = 1,
- HASH_ALG_SHA1        = 2,
- HASH_ALG_SHA256      = 8,
- HASH_ALG_SHA384      = 9,
- HASH_ALG_SHA512      = 10,
- HASH_ALG_SHA224      = 11,
- HASH_ALG_SHA3_512    = 12,
- HASH_ALG_SHA3_384    = 13,
- HASH_ALG_SHA3_256    = 14,
- HASH_ALG_SHA3_224    = 15,
- HASH_ALG_STREEBOG512 = 16,
- HASH_ALG_STREEBOG256 = 17
-};
-
-typedef struct
-{
- unsigned context_size;
- unsigned hash_size;
- unsigned block_size;
-
- void (*func_init)(void *ctx);
- void (*func_update)(void *ctx, const void *buf, size_t len);
- const void* (*func_final)(void *ctx); 
-} HashInfo;
-
-#define DECLARE_HASH_INFO(name, name_prefix, hash_size, block_size) \
- static const HashInfo HashInfo_ ## name = \
- {                                         \
-  sizeof(name ## _CTX),                    \
-  hash_size,                               \
-  block_size,                              \
-  name_prefix ## _init,                    \
-  name_prefix ## _update,                  \
-  name_prefix ## _final                    \
- };
-
-typedef STREEBOG_CTX STREEBOG512_CTX;
-typedef STREEBOG_CTX STREEBOG256_CTX;
-
-DECLARE_HASH_INFO(MD5,         md5,         16, 64)
-DECLARE_HASH_INFO(SHA1,        sha1,        20, 64)
-DECLARE_HASH_INFO(SHA256,      sha256,      32, 64)
-DECLARE_HASH_INFO(SHA224,      sha224,      28, 64)
-DECLARE_HASH_INFO(SHA512,      sha512,      64, 128)
-DECLARE_HASH_INFO(SHA384,      sha384,      48, 128)
-DECLARE_HASH_INFO(SHA3_512,    sha3_512,    64, 72)
-DECLARE_HASH_INFO(SHA3_384,    sha3_384,    48, 104)
-DECLARE_HASH_INFO(SHA3_256,    sha3_256,    32, 136)
-DECLARE_HASH_INFO(SHA3_224,    sha3_224,    28, 144)
-DECLARE_HASH_INFO(STREEBOG512, streebog512, 64, 64)
-DECLARE_HASH_INFO(STREEBOG256, streebog256, 32, 64)
-
-const HashInfo *get_hash_info(int alg)
-{
- switch (alg)
- {
-  case HASH_ALG_MD5:         return &HashInfo_MD5;
-  case HASH_ALG_SHA1:        return &HashInfo_SHA1;
-  case HASH_ALG_SHA256:      return &HashInfo_SHA256;
-  case HASH_ALG_SHA224:      return &HashInfo_SHA224;
-  case HASH_ALG_SHA512:      return &HashInfo_SHA512;
-  case HASH_ALG_SHA384:      return &HashInfo_SHA384;
-  case HASH_ALG_SHA3_512:    return &HashInfo_SHA3_512;
-  case HASH_ALG_SHA3_384:    return &HashInfo_SHA3_384;
-  case HASH_ALG_SHA3_256:    return &HashInfo_SHA3_256;
-  case HASH_ALG_SHA3_224:    return &HashInfo_SHA3_224;
-  case HASH_ALG_STREEBOG512: return &HashInfo_STREEBOG512;
-  case HASH_ALG_STREEBOG256: return &HashInfo_STREEBOG256;
- }
- return NULL;
-}
-
 static const struct
 {
  const char *name;
  int alg;
-} hash_def[] =
+} hash_names[] =
 {
- { "md5",         HASH_ALG_MD5         },
- { "sha1",        HASH_ALG_SHA1        },
- { "sha256",      HASH_ALG_SHA256      },
- { "sha224",      HASH_ALG_SHA224      },
- { "sha512",      HASH_ALG_SHA512      }, 
- { "sha384",      HASH_ALG_SHA384      },
- { "sha3-512",    HASH_ALG_SHA3_512    },
- { "sha3-384",    HASH_ALG_SHA3_384    },
- { "sha3-256",    HASH_ALG_SHA3_256    },
- { "sha3-224",    HASH_ALG_SHA3_224    },
- { "streebog512", HASH_ALG_STREEBOG512 },
- { "streebog256", HASH_ALG_STREEBOG256 }
+ { "md5",         ID_HASH_MD5         },
+ { "sha1",        ID_HASH_SHA1        },
+ { "sha256",      ID_HASH_SHA256      },
+ { "sha224",      ID_HASH_SHA224      },
+ { "sha512",      ID_HASH_SHA512      },
+ { "sha384",      ID_HASH_SHA384      },
+ #ifdef CRYPTO_ENABLE_HASH_SHA3
+ { "sha3-512",    ID_HASH_SHA3_512    },
+ { "sha3-384",    ID_HASH_SHA3_384    },
+ { "sha3-256",    ID_HASH_SHA3_256    },
+ { "sha3-224",    ID_HASH_SHA3_224    },
+ #endif
+ #ifdef CRYPTO_ENABLE_HASH_STREEBOG
+ { "streebog512", ID_HASH_STREEBOG512 },
+ { "streebog256", ID_HASH_STREEBOG256 }
+ #endif
 };
 
-const HashInfo *get_hash_info(int alg);
-
-static const HashInfo *get_hash_by_name(const char *name)
+static const hash_def *get_hash_by_name(const char *name)
 {
  int i;
- for (i = 0; i < countof(hash_def); i++)
-  if (!strcmp(name, hash_def[i].name))
-   return get_hash_info(hash_def[i].alg);
+ for (i = 0; i < countof(hash_names); i++)
+  if (!strcmp(name, hash_names[i].name))
+   return hash_factory(hash_names[i].alg);
  return NULL;
 }
 
@@ -135,7 +58,7 @@ static void print_time(int64_t total_time)
   printf("Time: %d ms\n", (int) (total_time*1000/timestamp_frequency()));
 }
 
-static int hash_file(const HashInfo *hi, const char *filename)
+static int hash_file(const hash_def *hd, const char *filename)
 {
  uint8_t buf[0x10000];
  int64_t total_time = 0, ts_start;
@@ -146,8 +69,8 @@ static int hash_file(const HashInfo *hi, const char *filename)
   fprintf(stderr, "%s: error opening file\n", filename);
   return -1;
  }
- context = alloca(hi->context_size);
- hi->func_init(context);
+ context = alloca(hd->context_size);
+ hd->func_init(context);
  for (;;)
  {
   int size = read_file(f, buf, sizeof(buf));
@@ -158,30 +81,30 @@ static int hash_file(const HashInfo *hi, const char *filename)
   }
   if (!size) break;
   ts_start = get_timestamp();
-  hi->func_update(context, buf, size);
+  hd->func_update(context, buf, size);
   total_time += get_timestamp() - ts_start;
  }
  close_file(f);
- print_digest(hi->func_final(context), hi->hash_size);
+ print_digest(hd->func_final(context), hd->hash_size);
  if (!opt_brief) printf(" *%s\n", filename); else putchar('\n');
  print_time(total_time);
  return 0;
 }
 
-static void hash_string(const HashInfo *hi, const char *text, unsigned rep)
+static void hash_string(const hash_def *hd, const char *text, unsigned rep)
 {
  unsigned i;
  int64_t total_time = 0;
  size_t len = strlen(text);
- void *context = alloca(hi->context_size);
- hi->func_init(context);
+ void *context = alloca(hd->context_size);
+ hd->func_init(context);
  for (i = 0; i < rep; i++)
  {
   int64_t ts_start = get_timestamp();
-  hi->func_update(context, text, len);
+  hd->func_update(context, text, len);
   total_time += get_timestamp() - ts_start;
  }
- print_digest(hi->func_final(context), hi->hash_size); 
+ print_digest(hd->func_final(context), hd->hash_size); 
  if (!opt_brief)
  {
   if (rep == 1)
@@ -195,10 +118,10 @@ static void print_algs()
 {
  int i;
  printf("Supported hash algorithms: ");
- for (i = 0; i < countof(hash_def); i++)
+ for (i = 0; i < countof(hash_names); i++)
  {
   if (i) printf(", ");
-  printf(hash_def[i].name);
+  printf(hash_names[i].name);
  }
  putchar('\n');
 }
@@ -206,9 +129,8 @@ static void print_algs()
 int main(int argc, char *argv[])
 {
  int i;
- const HashInfo *hi;
+ const hash_def *hd;
  unsigned rep = 1;
-
 
  if (argc < 2)
  {
@@ -224,8 +146,8 @@ int main(int argc, char *argv[])
   return 1;
  }
 
- hi = get_hash_info(HASH_ALG_MD5);
- assert(hi);
+ hd = hash_factory(ID_HASH_MD5);
+ assert(hd);
 
  for (i = 1; i < argc; i++)
   if (argv[i][0] == '-')
@@ -239,8 +161,8 @@ int main(int argc, char *argv[])
      fprintf(stderr, "Option -%s requires an argument\n", option);
      return 2;
     }
-    hi = get_hash_by_name(argv[i]);
-    if (!hi)
+    hd = get_hash_by_name(argv[i]);
+    if (!hd)
     {
      fprintf(stderr, "Unknown algorithm '%s'\n", argv[i]);
      return 3;
@@ -253,12 +175,12 @@ int main(int argc, char *argv[])
    if (!strcmp(option, "string"))
    {
     if (++i == argc) goto bad_arg;
-    hash_string(hi, argv[i], rep);
+    hash_string(hd, argv[i], rep);
    } else
    if (!strcmp(option, "file"))
    {
     if (++i == argc) goto bad_arg;
-    if (hash_file(hi, argv[i])) return 16;
+    if (hash_file(hd, argv[i])) return 16;
    } else
    if (!strcmp(option, "rep"))
    {
@@ -283,7 +205,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Option -%s is not supported\n", option);
     return 5;
    }
-  } else hash_file(hi, argv[i]);
+  } else hash_file(hd, argv[i]);
 
  return 0;
 }
