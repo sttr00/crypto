@@ -70,6 +70,8 @@ namespace asn1
    static element *create();
    static element *create(const void *data, size_t size);
    static element *create(unsigned type, const void *data = nullptr, size_t size = 0);
+   static element *create_with_buf(size_t size);
+   static element *create_with_buf(unsigned type, size_t size);
 
    bool get_small_uint(unsigned &val) const;
    bool get_small_int(int &val) const;   

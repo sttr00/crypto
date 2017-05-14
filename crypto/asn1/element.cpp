@@ -54,6 +54,20 @@ element *element::create(unsigned type, const void *data, size_t size)
  return el;
 }
 
+element *element::create_with_buf(size_t size)
+{
+ element *el = new element(operator new(size), size);
+ el->flags |= FLAG_HEAP_ALLOC | FLAG_OWN_BUFFER;
+ return el;
+}
+
+element *element::create_with_buf(unsigned type, size_t size)
+{
+ element *el = new element(type, operator new(size), size);
+ el->flags |= FLAG_HEAP_ALLOC | FLAG_OWN_BUFFER;
+ return el;
+}
+
 element::~element()
 {
  if (flags & FLAG_OWN_BUFFER) ::operator delete(const_cast<uint8_t*>(data));
