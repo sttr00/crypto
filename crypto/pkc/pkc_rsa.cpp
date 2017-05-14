@@ -249,11 +249,11 @@ static void mgf1(uint8_t *out, size_t out_size, const void *seed, size_t seed_le
 }
 
 #define GET_INT_PARAM(result) \
- if (params[i].size) return false; \
+ if (params[i].size) return 0; \
  result = params[i].ival;
 
 #define GET_BOOL_PARAM(result) \
- if (params[i].size) return false; \
+ if (params[i].size) return 0; \
  result = params[i].bval;
 
 #define GET_DATA_PARAM(result) \
@@ -284,11 +284,11 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
     GET_INT_PARAM(wrap_alg);
     if (!(wrap_alg == ID_RSA || wrap_alg == ID_RSASSA_PSS)) return false;
     break;
-  
+
    case PARAM_HASH_ALG:
     GET_INT_PARAM(hash_alg);
     break;
-  
+
    case PARAM_MGF_HASH_ALG:
     GET_INT_PARAM(mg_hash_alg);
     break;
@@ -297,7 +297,7 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
     GET_DATA_PARAM(salt);
     if (salt.size >= 0x10000) return false;
     break;
- 
+
    default:
     return false;
   }
@@ -418,25 +418,25 @@ asn1::element *pkc_rsa::create_params_struct(const param_data *params, int param
   {
    case PARAM_DATA_IS_HASH:
     break;
-   
+
    case PARAM_WRAPPING_ALG:
     GET_INT_PARAM(wrap_alg);
     if (!(wrap_alg == ID_RSA || wrap_alg == ID_RSASSA_PSS)) return nullptr;
     break;
-  
+
    case PARAM_HASH_ALG:
     GET_INT_PARAM(hash_alg);
     break;
-  
+
    case PARAM_MGF_HASH_ALG:
     GET_INT_PARAM(mg_hash_alg);
     break;
-  
+
    case PARAM_SALT:
     GET_DATA_PARAM(salt);
     if (salt.size >= 0x10000) return nullptr;
     break;
- 
+
    default:
     return nullptr;
   }
@@ -687,7 +687,7 @@ bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
   if (!pad_len) return false;
   size_t hash_size;
   const void *hash = decode_v15_wrapping(out + pad_len, out_size - pad_len, hd_hash->id, hash_size);
-  if (!hash || hash_size != hd_hash->hash_size) return false;
+  if (!hash || static_cast<int>(hash_size) != hd_hash->hash_size) return false;
   void *ctx = alloca(hd_hash->context_size);
   hd_hash->func_init(ctx);
   hd_hash->func_update(ctx, data, data_size);

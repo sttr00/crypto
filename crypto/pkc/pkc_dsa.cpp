@@ -180,11 +180,11 @@ static uint8_t *pack_bigint(const bigint_t num, size_t &out_size)
 }
 
 #define GET_INT_PARAM(result) \
- if (params[i].size) return false; \
+ if (params[i].size) return 0; \
  result = params[i].ival;
 
 #define GET_BOOL_PARAM(result) \
- if (params[i].size) return false; \
+ if (params[i].size) return 0; \
  result = params[i].bval;
 
 bool pkc_dsa::create_signature(void *out, size_t &out_size,
@@ -204,7 +204,7 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
    case PARAM_HASH_ALG:
     GET_INT_PARAM(hash_alg);
     break;
-  
+
    default:
     return false;
   }

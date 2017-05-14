@@ -1,0 +1,21 @@
+#ifndef __file_utils_h__
+#define __file_utils_h__
+
+#include <string>
+
+enum
+{
+ FORMAT_DEFAULT,
+ FORMAT_BIN,
+ FORMAT_HEX,
+ FORMAT_BASE64
+};
+
+int get_format(const char *fmt);
+void *load_file(const char *filename, int &size, bool use_stdin);
+void *load_pem_file(const char *filename, int &size, const std::string &type, std::string *found_type = nullptr);
+void *load_input_file(const char *filename, int &size, bool use_stdin, int format, std::string *out_type);
+bool save_output_file(const char *filename, const void *data, int size, bool use_stdout, int format, const char *pem_type);
+const void *decode_pkcs8(const char *filename, const void *data, size_t size, int req_alg_id, size_t &out_size);
+
+#endif // __file_utils_h__

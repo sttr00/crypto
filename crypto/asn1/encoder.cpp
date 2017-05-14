@@ -32,7 +32,7 @@ static inline size_t count_length_bytes(size_t size)
  return 1 + ((bs + 8) >> 3);
 }
 
-size_t asn1::calc_encoded_size(element *el)
+size_t calc_encoded_size(element *el)
 {
  size_t size = 0;
  vector<encoder_stack_item> v;
@@ -66,7 +66,7 @@ size_t asn1::calc_encoded_size(element *el)
  return size;
 }
 
-bool asn1::encode_def_length(void *out, size_t &size, const element *el)
+bool encode_def_length(void *out, size_t &size, const element *el)
 {
  uint8_t *p = static_cast<uint8_t*>(out);
  vector<const element*> v;
@@ -126,7 +126,7 @@ bool asn1::encode_def_length(void *out, size_t &size, const element *el)
  return true;
 }
 
-size_t asn1::get_indef_length_encoded_size(const element *el)
+size_t get_indef_length_encoded_size(const element *el)
 {
  size_t size = 0;
  vector<const element*> v; 
@@ -151,7 +151,7 @@ size_t asn1::get_indef_length_encoded_size(const element *el)
  return size;
 }
 
-bool asn1::encode_indef_length(void *out, size_t &size, const element *el)
+bool encode_indef_length(void *out, size_t &size, const element *el)
 {
  uint8_t *p = static_cast<uint8_t*>(out);
  vector<const element*> v;
