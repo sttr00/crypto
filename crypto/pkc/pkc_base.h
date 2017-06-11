@@ -35,10 +35,11 @@ class pkc_base
   enum
   {
    WHERE_SIGNATURE = 1,
-   WHETE_PUBLIC_KEY_INFO
+   WHERE_PUBLIC_KEY_INFO
   };
   
   virtual ~pkc_base() {}
+  virtual int  get_id() const = 0;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param) = 0;
   virtual bool set_private_key(const void *data, size_t size) = 0;
   virtual void set_rng(random_gen *rng) = 0;
@@ -49,6 +50,7 @@ class pkc_base
   virtual bool verify_signature(const void *sig, size_t sig_size,
                                 const void *data, size_t data_size,
                                 const asn1::element *param) const = 0;
+  virtual size_t get_max_signature_size() const = 0;
 };
 
 #endif // __pkc_base_h__

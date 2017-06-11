@@ -48,6 +48,11 @@ pkc_dsa::pkc_dsa()
  rng = nullptr;
 }
 
+int pkc_dsa::get_id() const
+{
+ return ID_DSA;
+}
+
 int pkc_dsa::sign_oid_to_hash_oid(int id)
 {
  for (unsigned i = 0; i < countof(dsa_oid_pairs); i += 2)
@@ -212,7 +217,6 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);
  if (!hd) return false;
- if (hd->hash_size > static_cast<int>(q.size)) return false;
  bigint_t h;
  if (!data_is_hash)
  {
@@ -232,6 +236,9 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
  bigint_t pv = bigint_create_bytes_be(p.data, p.size);
  bigint_t qv = bigint_create_bytes_be(q.data, q.size);
  bigint_t gv = bigint_create_bytes_be(g.data, g.size);
+ int shift = hd->hash_size - static_cast<int>(q.size);
+ if (shift > 0) bigint_rshift(h, h, shift<<3);
+ if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
  bool result = false;
  while (!result)
  {
@@ -353,7 +360,7 @@ bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
  int hash_alg = sign_oid_to_hash_oid(alg);
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);
- if (!hd || static_cast<size_t>(hd->hash_size) > q.size) return false;
+ if (!hd) return false;
  asn1::element *el_sig = asn1::decode(sig, sig_size, 0, nullptr);
  if (!el_sig) return false;
  bool result = false;
@@ -383,6 +390,9 @@ bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
      bigint_t w = bigint_create(0);
      bigint_t t1 = bigint_create(0);
      bigint_t t2 = bigint_create(0);
+     int shift = hd->hash_size - static_cast<int>(q.size);
+     if (shift > 0) bigint_rshift(h, h, shift<<3);
+     if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
      if (bigint_minv(w, s, qv))
      {
       bigint_mmul(t1, h, w, qv);
@@ -409,4 +419,11 @@ bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
  }
  asn1::delete_tree(el_sig);
  return result;
+}
+
+size_t pkc_dsa::get_max_signature_size() const
+{
+ // sequence: 2 header bytes
+ // integers: 2 header bytes, 1 zero pad byte
+ return (q.size << 1) + 8;
 }

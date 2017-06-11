@@ -49,6 +49,11 @@ pkc_rsa::pkc_rsa()
  priv_exp.clear();
 }
 
+int pkc_rsa::get_id() const
+{
+ return ID_RSA;
+}
+
 int pkc_rsa::sign_oid_to_hash_oid(int id)
 {
  for (unsigned i = 0; i < countof(v15_oid_pairs); i += 2)
