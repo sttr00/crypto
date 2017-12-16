@@ -206,12 +206,14 @@ void *skein256mac_alloc()
 
 void skein256mac_set_key(void *pctx, const void *pkey, size_t key_size, unsigned out_bits)
 {
+ size_t ptr;
  uint8_t *saved_state = (uint8_t *) pctx;
  SKEIN256_CTX *ctx = (SKEIN256_CTX *) (saved_state + HASH_BLOCK_SIZE);
  const uint8_t *key = (const uint8_t *) pkey;
  union
  {
   uint8_t b[HASH_BLOCK_SIZE];
+  uint16_t u[HASH_BLOCK_SIZE/sizeof(uint16_t)];
   uint64_t w[HASH_BLOCK_SIZE/sizeof(uint64_t)];
  } cfg;
  assert(out_bits <= HASH_BLOCK_SIZE*8);
@@ -219,7 +221,7 @@ void skein256mac_set_key(void *pctx, const void *pkey, size_t key_size, unsigned
  /* key block */
  ctx->t[0] = 0;
  ctx->t[1] = FLAG_FIRST;
- for (size_t ptr = 0;;)
+ for (ptr = 0;;)
  {
   unsigned i;
   size_t nptr = ptr + HASH_BLOCK_SIZE;
@@ -249,7 +251,7 @@ void skein256mac_set_key(void *pctx, const void *pkey, size_t key_size, unsigned
  cfg.b[2] = 'A';
  cfg.b[3] = '3';
  cfg.b[4] = 1;
- *(uint16_t *) (cfg.b + 8) = VALUE_LE16(out_bits);
+ cfg.u[4] = VALUE_LE16(out_bits);
  ctx->t[0] = 32;
  ctx->t[1] = TYPE(4) | FLAG_FIRST | FLAG_FINAL;
  skein256_ubi(ctx, cfg.w);
