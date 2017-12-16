@@ -15,6 +15,10 @@ using namespace oid;
 static const size_t MIN_BITS = 512;
 static const size_t MAX_BITS = 16384;
 
+void *gen_k_init(uint8_t *k, uint8_t *v, const hash_def *hd, const bigint_t q, const bigint_t h, const void *x, int xsize);
+void gen_k_create(bigint_t result, uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac, const bigint_t q);
+void gen_k_next_key(uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac);
+
 static const uint16_t dsa_oid_pairs[] =
 {
  ID_SIGN_DSA_SHA1,     ID_HASH_SHA1,
@@ -40,7 +44,7 @@ static const bool check_bit_len(int pbits, int qbits)
 {
  for (unsigned i = 0; i < countof(bit_len_pairs); i += 2)
   if (pbits >= bit_len_pairs[i]-7 && pbits <= bit_len_pairs[i]+8 &&
-      bit_len_pairs[i+1] == qbits) return true;
+      qbits >= bit_len_pairs[i+1] && qbits <= bit_len_pairs[i+1]+8) return true;
  return false;
 }
 
@@ -204,6 +208,11 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
 {
  if (!x.data || !rng) return false;
  bool data_is_hash = false;
+ #ifdef BROKEN_HASH_TRUNCATION
+ bool deterministic = false;
+ #else
+ bool deterministic = true;
+ #endif
  int hash_alg = 0;
  for (int i = 0; i < param_count; i++)
   switch (params[i].type)
@@ -215,6 +224,12 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
    case PARAM_HASH_ALG:
     GET_INT_PARAM(hash_alg);
     break;
+
+   #ifndef BROKEN_HASH_TRUNCATION
+   case PARAM_DETERMINISTIC:
+    GET_BOOL_PARAM(deterministic);
+    break;
+   #endif
 
    default:
     return false;
@@ -232,7 +247,8 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
   h = bigint_create_bytes_be(hd->func_final(ctx), hd->hash_size);
  } else h = bigint_create_bytes_be(data, data_size);
  
- void *kbuf = alloca(q.size);
+ uint8_t *kbuf, *vbuf;
+ void *ctx_hmac = nullptr;
  bigint_t r = bigint_create(0);
  bigint_t s = bigint_create(0);
  bigint_t k = bigint_create(0);
@@ -242,24 +258,52 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
  bigint_t pv = bigint_create_bytes_be(p.data, p.size);
  bigint_t qv = bigint_create_bytes_be(q.data, q.size);
  bigint_t gv = bigint_create_bytes_be(g.data, g.size);
+ #ifdef BROKEN_HASH_TRUNCATION
  int shift = hd->hash_size - static_cast<int>(q.size);
  if (shift > 0) bigint_rshift(h, h, shift<<3);
+ #else
+ int shift = (hd->hash_size<<3) - bigint_get_bit_count(qv);
+ if (shift > 0) bigint_rshift(h, h, shift);
  if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
- bool result = false;
- while (!result)
+ #endif
+ if (deterministic)
  {
-  if (!get_random_range(kbuf, q.size, q.data, rng, GRR_FLAG_SECURE)) continue;
-  bigint_set_bytes_be(k, kbuf, q.size);
-  if (bigint_eq_word(k, 0)) continue;
+  kbuf = static_cast<uint8_t*>(alloca((hd->hash_size<<1) + 1));
+  vbuf = kbuf + hd->hash_size;
+  ctx_hmac = gen_k_init(kbuf, vbuf, hd, qv, h, x.data, x.size);
+ } else kbuf = static_cast<uint8_t*>(alloca(q.size));
+ bool result = false;
+ for (;;)
+ {
+  if (deterministic)
+  {
+   gen_k_create(k, kbuf, vbuf, hd->hash_size, ctx_hmac, qv);
+  } else
+  {
+   if (!get_random_range(kbuf, q.size, q.data, rng, GRR_FLAG_SECURE)) continue;
+   bigint_set_bytes_be(k, kbuf, q.size);
+   if (bigint_eq_word(k, 0)) continue;
+  }
   bigint_mpow(t1, gv, k, pv);
   bigint_mod(r, t1, qv);
-  if (bigint_eq_word(r, 0)) continue;
+  if (bigint_eq_word(r, 0))
+  {
+   if (deterministic) gen_k_next_key(kbuf, vbuf, hd->hash_size, ctx_hmac);
+   continue;
+  }
   if (!bigint_minv(t1, k, qv)) break;
   bigint_mmul(t2, xv, r, qv);
   bigint_add(t2, t2, h);
   bigint_mmul(s, t1, t2, qv);
-  if (!bigint_eq_word(s, 0)) result = true;
+  if (!bigint_eq_word(s, 0))
+  {
+   result = true;
+   break;
+  }
+  if (deterministic) gen_k_next_key(kbuf, vbuf, hd->hash_size, ctx_hmac);
  }
+
+ free(ctx_hmac);
  bigint_destroy(gv);
  bigint_destroy(qv);
  bigint_destroy(pv);
@@ -396,9 +440,15 @@ bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
      bigint_t w = bigint_create(0);
      bigint_t t1 = bigint_create(0);
      bigint_t t2 = bigint_create(0);
+     #ifdef BROKEN_HASH_TRUNCATION
      int shift = hd->hash_size - static_cast<int>(q.size);
      if (shift > 0) bigint_rshift(h, h, shift<<3);
+     #else
+     int qbits = bigint_get_bit_count(qv);
+     int shift = (hd->hash_size<<3) - qbits;
+     if (shift > 0) bigint_rshift(h, h, shift);
      if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
+     #endif
      if (bigint_minv(w, s, qv))
      {
       bigint_mmul(t1, h, w, qv);

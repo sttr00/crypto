@@ -8,7 +8,8 @@ class pkc_dsa : public pkc_base
  public:
   enum
   {
-   PARAM_HASH_ALG = 64
+   PARAM_HASH_ALG = 64,
+   PARAM_DETERMINISTIC = 65
   };
   
   pkc_dsa();
