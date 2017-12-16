@@ -16,21 +16,33 @@ static const struct
  int alg;
 } hash_names[] =
 {
- { "md5",         ID_HASH_MD5         },
- { "sha1",        ID_HASH_SHA1        },
- { "sha256",      ID_HASH_SHA256      },
- { "sha224",      ID_HASH_SHA224      },
- { "sha512",      ID_HASH_SHA512      },
- { "sha384",      ID_HASH_SHA384      },
+ { "md5",          ID_HASH_MD5          },
+ { "sha1",         ID_HASH_SHA1         },
+ { "sha256",       ID_HASH_SHA256       },
+ { "sha224",       ID_HASH_SHA224       },
+ { "sha512",       ID_HASH_SHA512       },
+ { "sha384",       ID_HASH_SHA384       },
  #ifdef CRYPTO_ENABLE_HASH_SHA3
- { "sha3-512",    ID_HASH_SHA3_512    },
- { "sha3-384",    ID_HASH_SHA3_384    },
- { "sha3-256",    ID_HASH_SHA3_256    },
- { "sha3-224",    ID_HASH_SHA3_224    },
+ { "sha3-512",     ID_HASH_SHA3_512     },
+ { "sha3-384",     ID_HASH_SHA3_384     },
+ { "sha3-256",     ID_HASH_SHA3_256     },
+ { "sha3-224",     ID_HASH_SHA3_224     },
+ #endif
+ #ifdef CRYPTO_ENABLE_HASH_SKEIN256
+ { "skein256-128", ID_HASH_SKEIN256_128 },
+ { "skein256-160", ID_HASH_SKEIN256_160 },
+ { "skein256-224", ID_HASH_SKEIN256_224 },
+ { "skein256-256", ID_HASH_SKEIN256_256 },
+ #endif
+ #ifdef CRYPTO_ENABLE_HASH_SKEIN512
+ { "skein512-224", ID_HASH_SKEIN512_224 },
+ { "skein512-256", ID_HASH_SKEIN512_256 },
+ { "skein512-384", ID_HASH_SKEIN512_384 },
+ { "skein512-512", ID_HASH_SKEIN512_512 },
  #endif
  #ifdef CRYPTO_ENABLE_HASH_STREEBOG
- { "streebog512", ID_HASH_STREEBOG512 },
- { "streebog256", ID_HASH_STREEBOG256 }
+ { "streebog512",  ID_HASH_STREEBOG512  },
+ { "streebog256",  ID_HASH_STREEBOG256  }
  #endif
 };
 

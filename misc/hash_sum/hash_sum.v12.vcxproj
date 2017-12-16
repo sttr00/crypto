@@ -25,6 +25,8 @@
     <ClCompile Include="..\..\crypto\sha256.c" />
     <ClCompile Include="..\..\crypto\sha3.c" />
     <ClCompile Include="..\..\crypto\sha512.c" />
+    <ClCompile Include="..\..\crypto\skein256.c" />
+    <ClCompile Include="..\..\crypto\skein512.c" />
     <ClCompile Include="..\..\crypto\streebog.c" />
     <ClCompile Include="hash_sum.c" />
   </ItemGroup>
@@ -35,6 +37,8 @@
     <ClInclude Include="..\..\crypto\sha256.h" />
     <ClInclude Include="..\..\crypto\sha3.h" />
     <ClInclude Include="..\..\crypto\sha512.h" />
+    <ClInclude Include="..\..\crypto\skein256.h" />
+    <ClInclude Include="..\..\crypto\skein512.h" />
     <ClInclude Include="..\..\crypto\streebog.h" />
   </ItemGroup>
   <ItemGroup>
@@ -148,7 +152,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>false</ExceptionHandling>
-      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_STREEBOG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_SKEIN256;CRYPTO_ENABLE_HASH_SKEIN512;CRYPTO_ENABLE_HASH_STREEBOG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -169,7 +173,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>false</ExceptionHandling>
-      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_STREEBOG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_SKEIN256;CRYPTO_ENABLE_HASH_SKEIN512;CRYPTO_ENABLE_HASH_STREEBOG;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -191,7 +195,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <Optimization>Full</Optimization>
-      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_STREEBOG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_SKEIN256;CRYPTO_ENABLE_HASH_SKEIN512;CRYPTO_ENABLE_HASH_STREEBOG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -215,7 +219,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <Optimization>Full</Optimization>
-      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_STREEBOG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CRYPTO_ENABLE_HASH_SHA3;CRYPTO_ENABLE_HASH_SKEIN256;CRYPTO_ENABLE_HASH_SKEIN512;CRYPTO_ENABLE_HASH_STREEBOG;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

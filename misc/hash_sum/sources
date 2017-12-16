@@ -1,7 +1,10 @@
 TARGET=hash_sum
 CC=cc
 LD=cc
-CPPFLAGS="-I../.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -DCRYPTO_ENABLE_HASH_SHA3 -DCRYPTO_ENABLE_HASH_STREEBOG"
+CPPFLAGS="-I../.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
+ -DCRYPTO_ENABLE_HASH_SHA3
+ -DCRYPTO_ENABLE_HASH_SKEIN256 -DCRYPTO_ENABLE_HASH_SKEIN512
+ -DCRYPTO_ENABLE_HASH_STREEBOG"
 CFLAGS="-Wall -Werror=implicit-function-declaration"
 LDFLAGS=""
 
@@ -14,6 +17,8 @@ SOURCES="
 ../../crypto/sha256.c
 ../../crypto/sha512.c
 ../../crypto/sha3.c
+../../crypto/skein256.c
+../../crypto/skein512.c
 ../../crypto/streebog.c
 hash_sum.c
 "

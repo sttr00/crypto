@@ -57,6 +57,12 @@ typedef uint64_t hash_word_t;
 #define HASH_VALUE64  VALUE_LE64
 #endif
 
+#ifdef HASH_BUF_OFFSET
+#define OFFSET(x) (ctx->offset + x)
+#else
+#define OFFSET(x) (x)
+#endif
+
 #ifdef HASH_FUNC_UPDATE
 void HASH_FUNC_UPDATE(void *pctx, const void *data, size_t size)
 {
@@ -71,7 +77,8 @@ void HASH_FUNC_UPDATE(void *pctx, const void *data, size_t size)
   while (ptr & (HASH_WORD_SIZE-1))
   {
    if (!size) break;
-   ctx->buf.b[ptr++] = *buf++;
+   ctx->buf.b[OFFSET(ptr)] = *buf++;
+   ptr++;
    size--;
   }
   if (ptr == HASH_BLOCK_SIZE)
@@ -87,7 +94,7 @@ void HASH_FUNC_UPDATE(void *pctx, const void *data, size_t size)
    max_ptr = ptr + use_size;
    while (ptr < max_ptr)
    {
-    ctx->buf.w[ptr/HASH_WORD_SIZE] = HASH_GET_WORD(buf);
+    ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = HASH_GET_WORD(buf);
     ptr += HASH_WORD_SIZE;
     buf += HASH_WORD_SIZE;
    }
@@ -101,14 +108,14 @@ void HASH_FUNC_UPDATE(void *pctx, const void *data, size_t size)
  }
  while (size >= HASH_BLOCK_SIZE)
  {
-  #ifdef HAVE_UNALIGNED_ACCESS
+  #if defined(HAVE_UNALIGNED_ACCESS) && !defined(HASH_BUF_OFFSET)
   HASH_FUNC_COMPRESS(ctx, buf);
   buf += HASH_BLOCK_SIZE;
   #else 
-  int i;
-  for (i = 0; i < HASH_BLOCK_SIZE/HASH_WORD_SIZE; i++)
+  unsigned i;
+  for (i = 0; i < HASH_BLOCK_SIZE; i += HASH_WORD_SIZE)
   {
-   ctx->buf.w[i] = HASH_GET_WORD(buf);
+   ctx->buf.w[OFFSET(i)/HASH_WORD_SIZE] = HASH_GET_WORD(buf);
    buf += HASH_WORD_SIZE;
   }
   HASH_FUNC_COMPRESS(ctx, ctx->buf.w);
@@ -120,14 +127,15 @@ void HASH_FUNC_UPDATE(void *pctx, const void *data, size_t size)
   unsigned aligned_size = (unsigned) (size & ~(HASH_WORD_SIZE-1));
   while (ptr < aligned_size)
   {
-   ctx->buf.w[ptr/HASH_WORD_SIZE] = HASH_GET_WORD(buf);
+   ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = HASH_GET_WORD(buf);
    ptr += HASH_WORD_SIZE;
    buf += HASH_WORD_SIZE;
   }
   size -= aligned_size;
   while (size)
   {
-   ctx->buf.b[ptr++] = *buf++;
+   ctx->buf.b[OFFSET(ptr)] = *buf++;
+   ptr++;
    size--;
   }
  }
@@ -156,12 +164,15 @@ const void *HASH_FUNC_FINAL(void *pctx)
   uint8_t val = HASH_PAD_START;
   while (ptr & (HASH_WORD_SIZE-1))
   {
-   ctx->buf.b[ptr++] = val;
+   ctx->buf.b[OFFSET(ptr)] = val;
+   ptr++;
+   #if HASH_PAD_START != 0
    val = 0;
+   #endif
   }
  } else
  {
-  ctx->buf.w[ptr/HASH_WORD_SIZE] = HASH_VALUE_BE((hash_word_t) HASH_PAD_START << (HASH_WORD_BITS-8));
+  ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = HASH_VALUE_BE((hash_word_t) HASH_PAD_START << (HASH_WORD_BITS-8));
   ptr += HASH_WORD_SIZE;
  }
  #ifdef HASH_HAS_TOTAL_SIZE
@@ -169,7 +180,7 @@ const void *HASH_FUNC_FINAL(void *pctx)
  {
   while (ptr < HASH_BLOCK_SIZE)
   {
-   ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
+   ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = 0;
    ptr += HASH_WORD_SIZE;
   }
   HASH_FUNC_COMPRESS(ctx, ctx->buf.w);
@@ -177,20 +188,20 @@ const void *HASH_FUNC_FINAL(void *pctx)
  }
  while (ptr < HASH_BLOCK_SIZE-8)
  {
-  ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
+  ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = 0;
   ptr += HASH_WORD_SIZE;
  }
- put_unaligned64(ctx->buf.b + HASH_BLOCK_SIZE - 8, HASH_VALUE64(bits));
+ put_unaligned64(ctx->buf.b + OFFSET(HASH_BLOCK_SIZE-8), HASH_VALUE64(bits));
  #else
  while (ptr < HASH_BLOCK_SIZE)
  {
-  ctx->buf.w[ptr/HASH_WORD_SIZE] = 0;
+  ctx->buf.w[OFFSET(ptr)/HASH_WORD_SIZE] = 0;
   ptr += HASH_WORD_SIZE;
  }
  #endif
  #ifdef HASH_PAD_END
  /* only used by SHA3 */
- ctx->buf.b[HASH_BLOCK_SIZE-1] |= HASH_PAD_END;
+ ctx->buf.b[OFFSET(HASH_BLOCK_SIZE-1)] |= HASH_PAD_END;
  #endif
  #ifdef HASH_FUNC_FINAL_COMPRESS
  HASH_FUNC_FINAL_COMPRESS(ctx, ctx->buf.w);
