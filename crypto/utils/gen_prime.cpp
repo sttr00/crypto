@@ -74,7 +74,7 @@ static const uint16_t primes[] =
 static const int NUM_PRIMES = sizeof(primes)/sizeof(primes[0]);
 static const unsigned STEP_MAX = 20000;
 
-static bool test_prime(bigint_t n, int steps, random_gen *rng)
+bool test_prime(bigint_t n, int steps, random_gen *rng)
 {
  bigint_t n1 = bigint_create(0);
  bigint_t x = bigint_create_word(2);
@@ -139,25 +139,24 @@ bigint_t gen_prime(unsigned nbits, random_gen *rng, progress_t progress_func, vo
  static const int STEPS = 5;
  unsigned nbytes = (nbits + 7)>>3;
  uint8_t mask = 1<<((nbits-1) & 7);
- uint16_t mods[NUM_PRIMES]; 
+ int shift = nbits & 7;
+ uint16_t mods[NUM_PRIMES];
  uint8_t *buf = static_cast<uint8_t*>(alloca(nbytes));
  bigint_t p = NULL;
  bigint_t p2 = NULL;
  bigint_t mod = bigint_create(0);
- bigint_t d = bigint_create_word(0);
  for (;;)
  {
   if (progress_func && !progress_func(progress_arg, PROGRESS_GEN_PRIME)) break;
   rng->get_random(buf, nbytes);
+  if (shift) buf[0] >>= 8-shift;
   buf[0] |= mask;
   buf[nbytes-1] |= 1;
   p = bigint_create_bytes_be(buf, nbytes);
   bool fail = false;
   for (int i=0; i<NUM_PRIMES; i++)
   {
-   bigint_set_word(d, primes[i]);
-   bigint_mod(mod, p, d);
-   mods[i] = static_cast<uint16_t>(bigint_get_ls_word(mod));
+   mods[i] = static_cast<uint16_t>(bigint_modw(p, primes[i]));
    if (!mods[i]) fail = true;
   }
   if (fail)
@@ -184,7 +183,6 @@ bigint_t gen_prime(unsigned nbits, random_gen *rng, progress_t progress_func, vo
     if (test_prime(p2, STEPS, rng))
     {
      bigint_destroy(p);
-     bigint_destroy(d);
      bigint_destroy(mod);
      return p2;
     }
@@ -195,7 +193,6 @@ bigint_t gen_prime(unsigned nbits, random_gen *rng, progress_t progress_func, vo
    if (test_prime(p, STEPS, rng))
    {
     bigint_destroy(p2);
-    bigint_destroy(d);
     bigint_destroy(mod);
     return p;
    }
@@ -204,7 +201,6 @@ bigint_t gen_prime(unsigned nbits, random_gen *rng, progress_t progress_func, vo
  error:
  bigint_destroy(p);
  bigint_destroy(p2);
- bigint_destroy(d);
  bigint_destroy(mod);
  return NULL;
 }

@@ -13,6 +13,7 @@ enum
 
 typedef bool (*progress_t)(void *arg, int progress);
 
+bool test_prime(bigint_t n, int steps, random_gen *rng);
 bigint_t gen_prime(unsigned nbits, random_gen *rng, progress_t progress_func, void *progress_arg);
 
 #endif // __gen_prime_h__

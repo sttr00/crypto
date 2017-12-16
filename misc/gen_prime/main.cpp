@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   return 1;
  }
  static const unsigned min_bits = 32;
- static const unsigned max_bits = 8192;
+ static const unsigned max_bits = 16384;
  unsigned nbits = ~0u;
  unsigned seed; 
  bool use_seed = false;
