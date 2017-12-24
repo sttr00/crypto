@@ -18,7 +18,7 @@ class pkc_rsa : public pkc_base
   virtual ~pkc_rsa() {}
   virtual int  get_id() const;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param);
-  virtual bool set_private_key(const void *data, size_t size);
+  virtual bool set_private_key(const void *data, size_t size, const asn1::element *param);
   virtual void set_rng(random_gen *rng) {}
   virtual bool create_signature(void *out, size_t &out_size,
                                 const void *data, size_t data_size,
@@ -26,7 +26,7 @@ class pkc_rsa : public pkc_base
   virtual asn1::element *create_params_struct(const param_data *params, int param_count, int where) const;
   virtual bool verify_signature(const void *sig, size_t sig_size,
                                 const void *data, size_t data_size,
-                                const asn1::element *param) const;
+                                const asn1::element *alg_info) const;
   virtual size_t get_max_signature_size() const { return modulus.size; }
 
   // in == out is allowed

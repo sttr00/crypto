@@ -41,7 +41,7 @@ class pkc_base
   virtual ~pkc_base() {}
   virtual int  get_id() const = 0;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param) = 0;
-  virtual bool set_private_key(const void *data, size_t size) = 0;
+  virtual bool set_private_key(const void *data, size_t size, const asn1::element *param) = 0;
   virtual void set_rng(random_gen *rng) = 0;
   virtual bool create_signature(void *out, size_t &out_size,
                                 const void *hash, size_t hash_size,
@@ -49,7 +49,7 @@ class pkc_base
   virtual asn1::element *create_params_struct(const param_data *params, int param_count, int where) const = 0;
   virtual bool verify_signature(const void *sig, size_t sig_size,
                                 const void *data, size_t data_size,
-                                const asn1::element *param) const = 0;
+                                const asn1::element *alg_info) const = 0;
   virtual size_t get_max_signature_size() const = 0;
 };
 

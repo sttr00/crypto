@@ -17,14 +17,14 @@ bool get_random_range(void *output, int size, const void *maxval, random_gen *rn
  if (!result) return false;
  uint32_t top_word = 0;
  int bytes = 0;
- while (bytes < sizeof(top_word) && ptr + bytes < size)
+ while (bytes < int(sizeof(top_word)) && ptr + bytes < size)
  {
   top_word = top_word << 8 | in[ptr + bytes];
   bytes++;
  }
  uint32_t top_mask = 0;
  if (flags & GRR_FLAG_SET_MSB)
- {  
+ {
   top_mask = 1 << bsr32(top_word);
   top_word ^= top_mask;
   if (!top_word)
@@ -40,7 +40,7 @@ bool get_random_range(void *output, int size, const void *maxval, random_gen *rn
    ptr = next_ptr;
    while (ptr < size && !in[ptr]) out[ptr++] = 0;
    if (ptr == size) return false; // number has form 100...0
-   while (bytes < sizeof(top_word) && ptr + bytes < size)
+   while (bytes < int(sizeof(top_word)) && ptr + bytes < size)
    {
     top_word = top_word << 8 | in[ptr + bytes];
     bytes++;

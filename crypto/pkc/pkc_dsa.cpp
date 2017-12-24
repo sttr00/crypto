@@ -56,6 +56,7 @@ pkc_dsa::pkc_dsa()
  y.clear();
  x.clear();
  rng = nullptr;
+ ytemp = nullptr;
 }
 
 int pkc_dsa::get_id() const
@@ -77,27 +78,30 @@ int pkc_dsa::hash_oid_to_sign_oid(int id)
  return 0;
 }
 
-bool pkc_dsa::set_public_key(const void *data, size_t size, const asn1::element *param)
+bool pkc_dsa::get_params(const asn1::element* &el, pkc_base::data_buffer &res_p, pkc_base::data_buffer &res_q, pkc_base::data_buffer &res_g)
 {
- if (!param) return false;
- int alg_id;
- const asn1::element *alg_param;
- if (!parse_alg_id(alg_id, alg_param, param) || alg_id != ID_DSA) return false;
- if (!(alg_param && alg_param->is_sequence())) return false;
- data_buffer res_p, res_q, res_g, res_y;
- const asn1::element *el = alg_param->child;
  if (!(el && el->is_valid_positive_int())) return false; 
  get_integer(res_p, el);
  el = el->sibling;
  if (!(el && el->is_valid_positive_int())) return false; 
  get_integer(res_q, el);
+ int pbits = get_bits(res_p);
+ int qbits = get_bits(res_q);
+ if (!check_bit_len(pbits, qbits)) return false;
  el = el->sibling;
  if (!(el && el->is_valid_positive_int())) return false; 
  get_integer(res_g, el);
  if (!is_less(res_g, res_p)) return false;
- int pbits = get_bits(res_p);
- int qbits = get_bits(res_q);
- if (!check_bit_len(pbits, qbits)) return false;
+ el = el->sibling;
+ return true;
+}
+
+bool pkc_dsa::set_public_key(const void *data, size_t size, const asn1::element *param)
+{
+ if (!(param && param->is_sequence())) return false;
+ data_buffer res_p, res_q, res_g, res_y;
+ const asn1::element *el = param->child;
+ if (!get_params(el, res_p, res_q, res_g)) return false;
  bool result = false;
  asn1::element *el_pub = asn1::decode(data, size, 0, nullptr); 
  if (el_pub && !el_pub->sibling && el_pub->is_valid_positive_int())
@@ -111,60 +115,31 @@ bool pkc_dsa::set_public_key(const void *data, size_t size, const asn1::element 
    q = res_q;
    y = res_y;
    // new public key is set, clear private key
-   x.clear();   
+   x.clear();
+   operator delete(ytemp);
+   ytemp = nullptr;
   }  
   asn1::delete_tree(el_pub);
  }
  return result;
 }
 
-bool pkc_dsa::set_private_key(const void *data, size_t size)
+bool pkc_dsa::set_private_key(const void *data, size_t size, const asn1::element *param)
 {
  asn1::element *root = asn1::decode(data, size, 0, nullptr); 
  if (!root) return false;
  bool result = false;
+ data_buffer res_p, res_q, res_g, res_y, res_x;
  if (root->is_sequence())
  {
-  data_buffer res_p, res_q, res_g, res_y, res_x;
   const asn1::element *el = root->child;
   unsigned version;
   if (!(el && el->get_small_uint(version) && version == 0)) goto fin;
   el = el->sibling;
-  if (!(el && el->is_valid_positive_int())) goto fin;
-  get_integer(res_p, el);
-  if (p.data && !is_equal(res_p, p)) goto fin;
-  el = el->sibling;
-  if (!(el && el->is_valid_positive_int())) goto fin;
-  get_integer(res_q, el);
-  if (q.data)
-  {
-   if (!is_equal(res_q, q)) goto fin;
-  } else
-  {
-   int pbits = get_bits(res_p);
-   int qbits = get_bits(res_q);
-   if (!check_bit_len(pbits, qbits)) goto fin;
-  }
-  el = el->sibling;
-  if (!(el && el->is_valid_positive_int())) goto fin;
-  get_integer(res_g, el);
-  if (g.data)
-  {
-   if (!is_equal(res_g, g)) goto fin;
-  } else
-  {
-   if (!is_less(res_g, res_p)) goto fin;
-  }
-  el = el->sibling;
+  if (!get_params(el, res_p, res_q, res_g)) goto fin;
   if (!(el && el->is_valid_positive_int())) goto fin;
   get_integer(res_y, el);
-  if (y.data)
-  {
-   if (!is_equal(res_y, y)) goto fin;
-  } else
-  {
-   if (!is_less(res_y, res_p)) goto fin;
-  }
+  if (!is_less(res_y, res_p)) goto fin;
   el = el->sibling;
   if (!(el && el->is_valid_positive_int())) goto fin;
   get_integer(res_x, el);
@@ -175,6 +150,36 @@ bool pkc_dsa::set_private_key(const void *data, size_t size)
   q = res_q;
   y = res_y;
   x = res_x;
+  operator delete(ytemp);
+  ytemp = nullptr;
+ } else
+ if (root->is_valid_positive_int() && param && param->is_sequence())
+ {
+  const asn1::element *el = param->child;
+  if (!get_params(el, res_p, res_q, res_g)) goto fin;
+  get_integer(res_x, root);
+  if (!is_less(res_x, res_q)) goto fin;
+  result = true;
+  p = res_p;
+  g = res_g;
+  q = res_q;
+  x = res_x; 
+  // calculate public key
+  bigint_t pv = bigint_create_bytes_be(res_p.data, res_p.size);
+  bigint_t xv = bigint_create_bytes_be(res_x.data, res_x.size);
+  bigint_t gv = bigint_create_bytes_be(res_g.data, res_g.size);
+  bigint_t yv = bigint_create(0);
+  bigint_mpow(yv, gv, xv, pv);
+  operator delete(ytemp);
+  size_t out_size = bigint_get_byte_count(yv);
+  ytemp = static_cast<uint8_t*>(operator new(out_size));
+  bigint_get_bytes_be(yv, ytemp, out_size);
+  bigint_destroy(yv);
+  bigint_destroy(gv);
+  bigint_destroy(xv);
+  bigint_destroy(pv);
+  y.data = ytemp;
+  y.size = out_size;
  }
  fin:
  asn1::delete_tree(root);
@@ -401,12 +406,12 @@ asn1::element *pkc_dsa::create_params_struct(const param_data *params, int param
 
 bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
                                const void *data, size_t data_size,
-                               const asn1::element *param) const
+                               const asn1::element *alg_info) const
 {
  if (!y.data) return false;
  int alg;
  const asn1::element *alg_param;
- if (!parse_alg_id(alg, alg_param, param)) return false;
+ if (!parse_alg_id(alg, alg_param, alg_info)) return false;
  int hash_alg = sign_oid_to_hash_oid(alg);
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);

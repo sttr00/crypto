@@ -101,22 +101,9 @@ static bool get_priv_exponent(pkc_base::data_buffer &priv_exp,
  return is_less(priv_exp, modulus);
 }
 
-static inline bool compare_exponent(pkc_base::data_buffer x_large, unsigned x_small,
-                                    pkc_base::data_buffer y_large, unsigned y_small)
-{
- if (x_small) return x_small == y_small;
- return is_equal(x_large, y_large);
-}
-
 bool pkc_rsa::set_public_key(const void *data, size_t size, const asn1::element *param)
 {
- if (param)
- {
-  int alg_id;
-  const asn1::element *alg_param;
-  if (!parse_alg_id(alg_id, alg_param, param)) return false;
-  if (alg_id != ID_RSA || (alg_param && alg_param->tag != asn1::TYPE_NULL)) return false;
- }
+ if (param && param->tag != asn1::TYPE_NULL) return false;
  asn1::element *root = asn1::decode(data, size, 0, nullptr);
  if (!root) return false;
  bool result = false;
@@ -143,8 +130,9 @@ bool pkc_rsa::set_public_key(const void *data, size_t size, const asn1::element 
  return result;
 }
 
-bool pkc_rsa::set_private_key(const void *data, size_t size)
+bool pkc_rsa::set_private_key(const void *data, size_t size, const asn1::element *param)
 {
+ if (param && param->tag != asn1::TYPE_NULL) return false;
  asn1::element *root = asn1::decode(data, size, 0, nullptr);
  if (!root) return false;
  bool result = false;
@@ -157,12 +145,10 @@ bool pkc_rsa::set_private_key(const void *data, size_t size)
    data_buffer res_modulus, res_pub_exp_large, res_priv_exp;
    unsigned res_pub_exp_small;
    el = el->sibling;
-   if (el && get_modulus(res_modulus, el) &&
-       (!modulus.data || is_equal(modulus, res_modulus)))
+   if (el && get_modulus(res_modulus, el))
    {
     el = el->sibling;
-    if (el && get_pub_exponent(res_pub_exp_large, res_pub_exp_small, res_modulus, el) &&
-        (!modulus.data || compare_exponent(res_pub_exp_large, res_pub_exp_small, pub_exp_large, pub_exp_small)))
+    if (el && get_pub_exponent(res_pub_exp_large, res_pub_exp_small, res_modulus, el))
     {
      el = el->sibling;
      if (el && get_priv_exponent(res_priv_exp, res_modulus, el))
@@ -590,7 +576,7 @@ static const uint8_t *decode_v15_wrapping(const uint8_t *data, size_t size, int 
 
 bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
                                const void *data, size_t data_size,
-                               const asn1::element *param) const
+                               const asn1::element *alg_info) const
 {
  if (!modulus.data) return false;
  const hash_def *hd_hash = nullptr;
@@ -600,7 +586,7 @@ bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
  bool result;
  int enc_alg;
  const asn1::element *alg_param;
- if (!parse_alg_id(enc_alg, alg_param, param)) return false;
+ if (!parse_alg_id(enc_alg, alg_param, alg_info)) return false;
  if (enc_alg == ID_RSASSA_PSS)
  {
   int hash_alg = ID_HASH_SHA1;

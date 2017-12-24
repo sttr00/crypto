@@ -13,10 +13,10 @@ class pkc_dsa : public pkc_base
   };
   
   pkc_dsa();
-  virtual ~pkc_dsa() {}
+  virtual ~pkc_dsa() { operator delete(ytemp); }
   virtual int  get_id() const;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param);
-  virtual bool set_private_key(const void *data, size_t size);
+  virtual bool set_private_key(const void *data, size_t size, const asn1::element *param);
   virtual void set_rng(random_gen *rng) { this->rng = rng; }
   virtual bool create_signature(void *out, size_t &out_size,
                                 const void *data, size_t data_size,
@@ -35,6 +35,9 @@ class pkc_dsa : public pkc_base
  private:
   data_buffer p, g, q, y, x;
   random_gen *rng;
+  uint8_t *ytemp;
+
+  bool get_params(const asn1::element* &el, data_buffer &res_p, data_buffer &res_q, data_buffer &res_g);
 };
 
 #endif // __pkc_dsa_h__

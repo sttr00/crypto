@@ -88,7 +88,6 @@ void hmac_set_key(void *ctx, const void *key, size_t key_size)
 void hmac_update(void *ctx, const void *data, size_t size)
 {
  const hash_def *hd = ((const hmac_ctx_header *) ctx)->hd;
- unsigned hash_ctx_size = (hd->context_size + CTX_ALIGN-1) & ~CTX_ALIGN;
  uint8_t *ctx_temp = (uint8_t *) ctx + sizeof(hmac_ctx_header);
  hd->func_update(ctx_temp, data, size);
 }
