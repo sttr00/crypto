@@ -1,0 +1,89 @@
+TARGET=signtool
+CC=cc
+LD=c++
+AS=nasm
+CXX=c++
+CFLAGS="-Wall"
+CXXFLAGS="-Wall -std=gnu++11 -Wno-unused-function"
+CPPFLAGS="-I../.. -I../../../bigint -DCRYPTO_ENABLE_HASH_SHA3"
+LDFLAGS="-lpthread -L../../../bigint/bigint"
+ASFLAGS="-f elf64"
+
+[ -z "$FEATURES" ] && FEATURES="debug"
+
+SOURCES="
+main.cpp
+../common/file_utils.cpp
+../../cpuid/cpu_features.c
+../../crypto/asn1/decoder.cpp
+../../crypto/asn1/element.cpp
+../../crypto/asn1/encoder.cpp
+../../crypto/pkc/gen_k.cpp
+../../crypto/pkc/pkc_dsa.cpp
+../../crypto/pkc/pkc_rsa.cpp
+../../crypto/rng/sys_random_unix.cpp
+../../crypto/rng/std_random.cpp
+../../crypto/rng/isaac.c
+../../crypto/utils/pem_file.cpp
+../../crypto/utils/random_range.cpp
+../../crypto/hash_factory.c
+../../crypto/hmac.c
+../../crypto/md5.c
+../../crypto/oid_def.cpp
+../../crypto/oid_search.cpp
+../../crypto/sha1.c
+../../crypto/sha256.c
+../../crypto/sha3.c
+../../crypto/sha512.c
+../../crypto/x86_64-gcc/rdrand.asm
+../../utils/base64.cpp
+../../utils/str_int_cvt.cpp
+"
+
+unset use_debug use_release
+
+CPPFLAGS_RELEASE="-DNDEBUG"
+CFLAGS_RELEASE="-O3 -fomit-frame-pointer"
+CXXLAGS_RELEASE="-O3 -fomit-frame-pointer"
+LDFLAGS_RELEASE="-lbigint"
+
+CPPFLAGS_DEBUG="-D_DEBUG"
+CFLAGS_DEBUG="-g"
+CXXFLAGS_DEBUG="-g"
+LDFLAGS_DEBUG="-g -lbigint-dbg"
+
+for feat in $FEATURES ; do
+ case $feat in
+  "debug")
+    use_debug=1
+    ;;
+  "release")
+    use_release=1
+    ;;
+  *)
+    echo "Unknown feature $feat"
+    exit 1
+    ;;
+ esac
+done
+
+if [ -n "$use_debug" ]; then
+ CONFIG="DEBUG"
+ CPPFLAGS="$CPPFLAGS $CPPFLAGS_DEBUG"
+ CFLAGS="$CFLAGS $CFLAGS_DEBUG"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_DEBUG"
+ LDFLAGS="$LDFLAGS $LDFLAGS_DEBUG"
+ TARGET="$TARGET-dbg"
+else
+ if [ -z "$use_release" ]; then
+  echo 'Use FEATURES="release" or FEATURES="debug"'
+  exit 1
+ fi
+ CONFIG="RELEASE"
+ CPPFLAGS="$CPPFLAGS $CPPFLAGS_RELEASE"
+ CFLAGS="$CFLAGS $CFLAGS_RELEASE"
+ CXXFLAGS="$CXXFLAGS $CXXFLAGS_RELEASE"
+ LDFLAGS="$LDFLAGS $LDFLAGS_RELEASE"
+fi
+
+unset feat use_debug use_release

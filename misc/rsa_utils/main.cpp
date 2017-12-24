@@ -480,18 +480,20 @@ int main(int argc, char *argv[])
   if (!priv_data) return 3;
   if (found_type == "PRIVATE KEY")
   {
-   size_t out_size;
-   const void *out_data = decode_pkcs8(priv_file, priv_data, size, oid::ID_RSA, out_size);
-   if (!out_data) return 3;
-   memcpy(priv_data, out_data, out_size);
-   size = out_size;
+   pkcs8_result result;
+   const int req_alg_id[] = { oid::ID_RSA, 0 };
+   if (!decode_pkcs8(result, priv_file, priv_data, size, req_alg_id)) return 3;
+   assert(result.size < size);
+   memcpy(priv_data, result.data, result.size);
+   size = result.size;
+   asn1::delete_tree(result.params);
   } else
   if (found_type != "RSA PRIVATE KEY")
   {
    fprintf(stderr, "Invalid private key format: %s\n", found_type.c_str());
    return 3;
   }
-  if (!rsa.set_private_key(priv_data, size))
+  if (!rsa.set_private_key(priv_data, size, nullptr))
   {
    fprintf(stderr, "Failed to load private key\n");
    return 6;

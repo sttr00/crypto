@@ -263,7 +263,7 @@ bool save_output_file(const char *filename, const void *data, int size, bool use
  return true;
 }
 
-static std::string print_oid(const uint8_t *data, size_t size)
+std::string print_oid(const uint8_t *data, size_t size)
 {
  std::string s;
  if (!size || (data[size-1] & 0x80)) return s;
@@ -294,7 +294,19 @@ static std::string print_oid(const uint8_t *data, size_t size)
  return s;
 }
 
-const void *decode_pkcs8(const char *filename, const void *data, size_t size, int req_alg_id, size_t &out_size)
+static inline bool check_alg_id(const int *req_alg_id, int id)
+{
+ if (!req_alg_id) return true;
+ int i = 0;
+ while (req_alg_id[i])
+ {
+  if (req_alg_id[i] == id) return true;
+  i++;
+ }
+ return false;
+}
+
+bool decode_pkcs8(pkcs8_result &result, const char *filename, const void *data, size_t size, const int *req_alg_id)
 {
  asn1::element *root = asn1::decode(data, size, 0, nullptr);
  if (!root)
@@ -302,8 +314,10 @@ const void *decode_pkcs8(const char *filename, const void *data, size_t size, in
   fprintf(stderr, "%s: Can't decode PKCS#8 structure\n", filename);
   return nullptr;
  }
- const void *result = nullptr;
- out_size = 0;
+ bool success = false;
+ result.data = nullptr;
+ result.size = 0;
+ result.params = nullptr;
  if (root->is_sequence())
  {
   const asn1::element *el = root->child;
@@ -313,17 +327,25 @@ const void *decode_pkcs8(const char *filename, const void *data, size_t size, in
    el = el->sibling;
    if (el && el->is_sequence())
    {
-    const asn1::element *alg_id = el->child;
+    asn1::element *alg_id = el->child;
     if (alg_id && alg_id->is_obj_id())
     {
      int id = oid::find(alg_id->data, alg_id->size);
-     if (id == req_alg_id)
+     if (check_alg_id(req_alg_id, id))
      {
       el = el->sibling;
       if (el && el->is_octet_string())
       {
-       result = el->data;
-       out_size = el->size;
+       if (alg_id->sibling)
+       {
+        result.params = alg_id->sibling;
+        // detach params element
+        alg_id->sibling = alg_id->sibling->sibling;
+       }
+       result.data = el->data;
+       result.size = el->size;
+       result.alg_id = id;
+       success = true;
       }
      } else fprintf(stderr, "%s: Algorithm %s not supported\n", filename, print_oid(alg_id->data, alg_id->size).c_str());
     }
@@ -331,5 +353,5 @@ const void *decode_pkcs8(const char *filename, const void *data, size_t size, in
   }
  }
  asn1::delete_tree(root);
- return result;
+ return success;
 }
