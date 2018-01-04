@@ -209,7 +209,7 @@ const void *HASH_FUNC_FINAL(void *pctx)
  HASH_FUNC_COMPRESS(ctx, ctx->buf.w);
  #endif
  #ifndef HASH_ENDIAN_MATCH
- for (i = 0; i < HASH_DIGEST_SIZE/HASH_WORD_SIZE; i++)
+ for (i = 0; i < (HASH_DIGEST_SIZE+HASH_WORD_SIZE-1)/HASH_WORD_SIZE; i++)
   digest[i] = HASH_SWAP_WORD(digest[i]);
  #endif
  return digest;
