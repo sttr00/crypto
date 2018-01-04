@@ -2,10 +2,12 @@
 #define __pkc_utils_h__
 
 #include "pkc_base.h"
+#include <bigint/bigint.h>
 #include <crypto/oid_def.h>
 #include <crypto/oid_search.h>
 #include <platform/bits.h>
 #include <cstring>
+#include <cassert>
 
 static inline int get_bits(pkc_base::data_buffer x)
 {
@@ -86,6 +88,19 @@ static size_t pack_small_uint(uint8_t out[], unsigned val)
   shift -= 8;
  }
  return out_size;
+}
+
+static uint8_t *pack_bigint(const bigint_t num, size_t &out_size)
+{
+ int bits = bigint_get_bit_count(num);
+ size_t pad = (bits & 7)? 0 : 1;
+ size_t bytes = (bits + 7) >> 3;
+ uint8_t *out = static_cast<uint8_t*>(operator new(bytes + pad));
+ if (pad) *out = 0;
+ int size = bigint_get_bytes_be(num, out + pad, bytes);
+ assert(size > 0);
+ out_size = size + pad;
+ return out;
 }
 
 #endif // __pkc_utils_h__

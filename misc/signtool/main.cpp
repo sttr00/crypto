@@ -4,6 +4,7 @@
 #include <crypto/asn1/encoder.h>
 #include <crypto/asn1/decoder.h>
 #include <crypto/pkc/pkc_dsa.h>
+#include <crypto/pkc/pkc_ecdsa.h>
 #include <crypto/pkc/pkc_rsa.h>
 #include <crypto/rng/std_random.h>
 #include <utils/str_int_cvt.h>
@@ -412,8 +413,9 @@ static pkc_base *create_pkc(int alg)
 {
  switch (alg)
  {
-  case oid::ID_RSA: return new pkc_rsa;
-  case oid::ID_DSA: return new pkc_dsa;
+  case oid::ID_RSA:   return new pkc_rsa;
+  case oid::ID_DSA:   return new pkc_dsa;
+  case oid::ID_ECDSA: return new pkc_ecdsa;
  }
  return nullptr;
 }
@@ -514,7 +516,7 @@ bool load_private_key(pkc_base* &pk, void* &data, const char *filename)
  const char *error = nullptr;
  if (type == "PRIVATE KEY")
  {
-  static const int req_alg_id[] = { oid::ID_RSA, oid::ID_DSA, 0 };
+  static const int req_alg_id[] = { oid::ID_RSA, oid::ID_DSA, oid::ID_ECDSA, 0 };
   pkcs8_result pk_res;
   if (decode_pkcs8(pk_res, filename, data, size, req_alg_id))
   {
@@ -536,6 +538,10 @@ bool load_private_key(pkc_base* &pk, void* &data, const char *filename)
  if (type == "DSA PRIVATE KEY")
  {
   result = load_raw_private_key(pk, oid::ID_DSA, data, size, error);
+ } else
+ if (type == "EC PRIVATE KEY")
+ {
+  result = load_raw_private_key(pk, oid::ID_ECDSA, data, size, error);
  } else fprintf(stderr, "%s: Can't load private key from a file of type %s\n", filename, type.c_str());
  if (!result)
  {

@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
-    </Filter>
     <Filter Include="asm">
       <UniqueIdentifier>{a3aa71df-ac48-4558-ab8c-16821a069ca6}</UniqueIdentifier>
     </Filter>
@@ -37,11 +33,14 @@
     <Filter Include="asn1">
       <UniqueIdentifier>{8f9858de-b084-42e3-8d87-5e9f63b8845b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="pkc">
-      <UniqueIdentifier>{4b76544d-0f59-474f-90b2-edae9f6bab48}</UniqueIdentifier>
-    </Filter>
     <Filter Include="crypto\utils">
       <UniqueIdentifier>{cc0cfa6c-3380-4edd-83ff-b85addc0ba97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="crypto\ec">
+      <UniqueIdentifier>{c90fa362-7495-434e-8024-15ec5284ab48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="crypto\pkc">
+      <UniqueIdentifier>{4b76544d-0f59-474f-90b2-edae9f6bab48}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -61,7 +60,7 @@
       <Filter>rng</Filter>
     </ClCompile>
     <ClCompile Include="..\..\crypto\pkc\pkc_rsa.cpp">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
@@ -106,10 +105,10 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\crypto\pkc\pkc_dsa.cpp">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\crypto\pkc\gen_k.cpp">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\crypto\hmac.c">
       <Filter>crypto</Filter>
@@ -119,6 +118,21 @@
     </ClCompile>
     <ClCompile Include="..\..\crypto\utils\pem_file.cpp">
       <Filter>crypto\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\ec\curves_wei.cpp">
+      <Filter>crypto\ec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\ec\ec_wei.c">
+      <Filter>crypto\ec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\ec\ec_weij.c">
+      <Filter>crypto\ec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\ec\ec_weip.c">
+      <Filter>crypto\ec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\pkc\pkc_ecdsa.cpp">
+      <Filter>crypto\pkc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -144,10 +158,10 @@
       <Filter>rng</Filter>
     </ClInclude>
     <ClInclude Include="..\..\crypto\pkc\pkc_base.h">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\crypto\pkc\pkc_rsa.h">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\base64.h">
       <Filter>utils</Filter>
@@ -183,7 +197,7 @@
       <Filter>crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\crypto\pkc\utils.h">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\utils\str_int_cvt.h">
       <Filter>utils</Filter>
@@ -192,7 +206,7 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\crypto\pkc\pkc_dsa.h">
-      <Filter>pkc</Filter>
+      <Filter>crypto\pkc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\crypto\hmac.h">
       <Filter>crypto</Filter>
@@ -202,6 +216,27 @@
     </ClInclude>
     <ClInclude Include="..\..\crypto\utils\pem_file.h">
       <Filter>crypto\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\ec\curves_wei.h">
+      <Filter>crypto\ec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\ec\ec_common.h">
+      <Filter>crypto\ec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\ec\ec_wei.h">
+      <Filter>crypto\ec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\ec\ec_weij.h">
+      <Filter>crypto\ec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\ec\ec_weip.h">
+      <Filter>crypto\ec</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\oid_const.h">
+      <Filter>crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\crypto\pkc\pkc_ecdsa.h">
+      <Filter>crypto\pkc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

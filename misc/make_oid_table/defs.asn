@@ -22,31 +22,24 @@ private OBJECT IDENTIFIER ::= { 1 3 6 1 3 }
 -- public key algorithms
 -- ---------------------
 
-rsaEncryption OBJECT IDENTIFIER ::= {
- iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1)
- pkcs-1(1) 1 }
+rsaEncryption OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(113549) pkcs(1) pkcs-1(1) 1 }
 
-id-dsa OBJECT IDENTIFIER ::= {
- iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 1 }
+id-dsa OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 1 }
 
 id-RSASSA-PSS  OBJECT IDENTIFIER  ::=  { pkcs-1 10 }
+
+-- was id-ecPublicKey
+id-ecdsa OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) ansi-X9-62(10045) keyType(2) 1 }
 
 -- ----------------
 -- hash algorithms
 -- ----------------
 
-id-md2 OBJECT IDENTIFIER ::= {
-    iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 2
-}
+id-md2 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 2 }
 
-id-md5 OBJECT IDENTIFIER ::= {
-    iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 5
-}
+id-md5 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 5 }
 
-id-sha1    OBJECT IDENTIFIER ::= {
-    iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2)
-    26
-}
+id-sha1 OBJECT IDENTIFIER ::= { iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2) 26 }
 
 id-sha256 OBJECT IDENTIFIER ::= { hashAlgs 1 }
 
@@ -94,6 +87,8 @@ id-hash-skein512-512 OBJECT IDENTIFIER ::= { private-hash-skein512 512 }
 -- PK + hash
 -- ---------
 
+-- RSA
+
 md2WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 2 }
 md5WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 4 }
 sha1WithRSAEncryption        OBJECT IDENTIFIER ::= { pkcs-1 5 }
@@ -109,8 +104,9 @@ id-rsa-with-sha3-256 OBJECT IDENTIFIER ::= { sigAlgs 14 }
 id-rsa-with-sha3-384 OBJECT IDENTIFIER ::= { sigAlgs 15 }
 id-rsa-with-sha3-512 OBJECT IDENTIFIER ::= { sigAlgs 16 }
 
-dsa-with-sha1 OBJECT IDENTIFIER ::=  {
- iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 3 }
+-- DSA
+
+dsa-with-sha1 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 3 }
 
 id-dsa-with-sha224 OBJECT IDENTIFIER ::= { sigAlgs 1 }
 
@@ -127,6 +123,27 @@ id-dsa-with-sha3-256 OBJECT IDENTIFIER ::= { sigAlgs 6 }
 id-dsa-with-sha3-384 OBJECT IDENTIFIER ::= { sigAlgs 7 }
 
 id-dsa-with-sha3-512 OBJECT IDENTIFIER ::= { sigAlgs 8 }
+
+-- ECDSA
+
+ecdsa-with-SHA1 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) ansi-X9-62(10045) signatures(4) 1 }
+
+-- no-export
+ecdsa-with-SHA2 OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) ansi-X9-62(10045) signatures(4) 3 }
+
+ecdsa-with-SHA224 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 1 }
+
+ecdsa-with-SHA256 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 2 }
+
+ecdsa-with-SHA384 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 3 }
+
+id-ecdsa-with-sha3-224 OBJECT IDENTIFIER ::= { sigAlgs 9 }
+
+id-ecdsa-with-sha3-256 OBJECT IDENTIFIER ::= { sigAlgs 10 }
+
+id-ecdsa-with-sha3-384 OBJECT IDENTIFIER ::= { sigAlgs 11 }
+
+id-ecdsa-with-sha3-512 OBJECT IDENTIFIER ::= { sigAlgs 12 }
 
 -- ----------------
 -- other algorithms

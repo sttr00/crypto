@@ -25,9 +25,13 @@ void *gen_k_init(uint8_t *k, uint8_t *v, const hash_def *hd, const bigint_t q, c
  v[hash_size] = 0;
  hmac_update(ctx_hmac, v, hash_size + 1);
  pad = qbytes - xsize;
+ uint8_t *xpad = nullptr;
  assert(pad >= 0);
- uint8_t *xpad = (uint8_t *) alloca(pad);
- for (int i = 0; i < pad; i++) xpad[i] = 0;
+ if (pad)
+ {
+  xpad = (uint8_t *) alloca(pad);
+  for (int i = 0; i < pad; i++) xpad[i] = 0;
+ }
  hmac_update(ctx_hmac, xpad, pad);
  hmac_update(ctx_hmac, x, xsize);
  hmac_update(ctx_hmac, t, qbytes);

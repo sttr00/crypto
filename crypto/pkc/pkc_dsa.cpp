@@ -6,7 +6,6 @@
 #include <crypto/utils/random_range.h>
 #include <crypto/hash_factory.h>
 #include <bigint/bigint.h>
-#include <cassert>
 
 using namespace oid;
 
@@ -186,19 +185,6 @@ bool pkc_dsa::set_private_key(const void *data, size_t size, const asn1::element
  return result;
 }
 
-static uint8_t *pack_bigint(const bigint_t num, size_t &out_size)
-{
- int bits = bigint_get_bit_count(num);
- size_t pad = (bits & 7)? 0 : 1;
- size_t bytes = (bits + 7) >> 3;
- uint8_t *out = static_cast<uint8_t*>(operator new(bytes + pad));
- if (pad) *out = 0;
- int size = bigint_get_bytes_be(num, out + pad, bytes);
- assert(size > 0);
- out_size = size + pad;
- return out;
-}
-
 #define GET_INT_PARAM(result) \
  if (params[i].size) return 0; \
  result = params[i].ival;
@@ -211,7 +197,7 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
                                const void *data, size_t data_size,
                                const param_data *params, int param_count) const
 {
- if (!x.data || !rng) return false;
+ if (!x.data) return false;
  bool data_is_hash = false;
  #ifdef BROKEN_HASH_TRUNCATION
  bool deterministic = false;
@@ -240,6 +226,7 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
     return false;
   }
 
+ if (!deterministic && !rng) return false;
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);
  if (!hd) return false;
@@ -362,6 +349,9 @@ asn1::element *pkc_dsa::create_params_struct(const param_data *params, int param
   switch (params[i].type)
   {
    case PARAM_DATA_IS_HASH:
+   #ifndef BROKEN_HASH_TRUNCATION
+   case PARAM_DETERMINISTIC:
+   #endif
     break;
 
    case PARAM_HASH_ALG:

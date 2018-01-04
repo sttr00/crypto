@@ -38,6 +38,7 @@ class pkc_base
    WHERE_PUBLIC_KEY_INFO
   };
   
+  pkc_base() {}
   virtual ~pkc_base() {}
   virtual int  get_id() const = 0;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param) = 0;
@@ -51,6 +52,10 @@ class pkc_base
                                 const void *data, size_t data_size,
                                 const asn1::element *alg_info) const = 0;
   virtual size_t get_max_signature_size() const = 0;
+
+ private:
+  pkc_base(const pkc_base &);
+  pkc_base& operator= (const pkc_base &);
 };
 
 #endif // __pkc_base_h__
