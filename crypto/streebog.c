@@ -119,6 +119,22 @@ do \
   "ldr %0, [%2]\n\t     ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3]\n\t"     \
   : "=&r"(tmp1), "=&r"(tmp2) : "r"(in), "r"(out) : "cc", "memory"); \
 } while (0)
+#elif defined(__aarch64__)
+#define add_512_inplace(out, in) \
+do \
+{  \
+ uint64_t tmp1, tmp2; \
+ asm volatile( \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adds %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2], #8\n\t ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3], #8\n\t" \
+  "ldr %0, [%2]\n\t     ldr %1, [%3]\n\t adcs %0, %0, %1\n\t str %0, [%3]\n\t"     \
+  : "=&r"(tmp1), "=&r"(tmp2) : "r"(in), "r"(out) : "cc", "memory"); \
+} while (0)
 #endif
 #elif defined(_MSC_VER)
 #if defined(_M_IX86) || defined(_M_X64)

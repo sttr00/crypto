@@ -180,11 +180,12 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
  ec_wei_def_init(&new_def, nullptr, nullptr, nullptr);
  init_point(new_gen);
  init_point(new_pub);
+ const asn1::element *el, *el_priv;
  if (!root->is_sequence()) goto fin; // ECPrivateKey, rfc5919
- const asn1::element *el = root->child;
+ el = root->child;
  unsigned version;
  if (!(el && el->get_small_uint(version) && version == 1)) goto fin;
- const asn1::element *el_priv = el->sibling;
+ el_priv = el->sibling;
  if (!(el_priv && el_priv->is_octet_string())) goto fin;
  el = el_priv->sibling;
  if (el && el->cls == asn1::CLASS_CONTEXT_SPECIFIC && el->tag == 0)
@@ -206,7 +207,7 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
   init_curve(&new_def, &new_gen, &new_order, curve);
   curve_id = curve->id;
  }
- if (el_priv->size != bigint_get_byte_count(new_order)) goto fin;
+ if (el_priv->size != (size_t) bigint_get_byte_count(new_order)) goto fin;
  new_priv = bigint_create_bytes_be(el_priv->data, el_priv->size);
  if (el && el->cls == asn1::CLASS_CONTEXT_SPECIFIC && el->tag == 1)
  {
@@ -226,7 +227,7 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
  }
 
  result = true;
- clear();  
+ clear();
  def = new_def;
  gen = new_gen;
  pub = new_pub;

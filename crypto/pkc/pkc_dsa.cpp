@@ -6,6 +6,7 @@
 #include <crypto/utils/random_range.h>
 #include <crypto/hash_factory.h>
 #include <bigint/bigint.h>
+#include <platform/alloca.h>
 
 using namespace oid;
 

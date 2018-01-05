@@ -1,15 +1,20 @@
 TARGET=signtool
 CC=cc
 LD=c++
-AS=nasm
 CXX=c++
 CFLAGS="-Wall"
 CXXFLAGS="-Wall -std=gnu++11 -Wno-unused-function"
 CPPFLAGS="-I../.. -I../../../bigint -DCRYPTO_ENABLE_HASH_SHA3"
 LDFLAGS="-lpthread -L../../../bigint/bigint"
-ASFLAGS="-f elf64"
 
 [ -z "$FEATURES" ] && FEATURES="debug"
+
+arch=`uname -m`
+if [ "$arch" = "x86_64" -o "$arch" = "amd64" ]; then
+ AS=nasm
+ ASFLAGS="-f elf64"
+ ARCH_SOURCES="../../crypto/x86_64-gcc/rdrand.asm"
+fi
 
 SOURCES="
 main.cpp
@@ -18,8 +23,12 @@ main.cpp
 ../../crypto/asn1/decoder.cpp
 ../../crypto/asn1/element.cpp
 ../../crypto/asn1/encoder.cpp
+../../crypto/ec/curves_wei.cpp
+../../crypto/ec/ec_wei.c
+../../crypto/ec/ec_weij.c
 ../../crypto/pkc/gen_k.cpp
 ../../crypto/pkc/pkc_dsa.cpp
+../../crypto/pkc/pkc_ecdsa.cpp
 ../../crypto/pkc/pkc_rsa.cpp
 ../../crypto/rng/sys_random_unix.cpp
 ../../crypto/rng/std_random.cpp
@@ -35,9 +44,9 @@ main.cpp
 ../../crypto/sha256.c
 ../../crypto/sha3.c
 ../../crypto/sha512.c
-../../crypto/x86_64-gcc/rdrand.asm
 ../../utils/base64.cpp
 ../../utils/str_int_cvt.cpp
+$ARCH_SOURCES
 "
 
 unset use_debug use_release

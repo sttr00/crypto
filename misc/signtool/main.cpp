@@ -589,7 +589,7 @@ int main(int argc, char *argv[])
          "  -sign-cert              Sign X.509 certificate\n"
          "  -verify-data            Verify signature on raw file\n"
          "  -sign-data              Sign raw file\n"
-         "  -in-sign <file>         Signature file to use with -data-verify\n"
+         "  -in-sign <file>         Signature file to use with -verify-data\n"
          "  -param <param>:<value>  Set signature parameters\n"
          "  -in-file  <file>        Read input from file\n"
          "  -out-file <file>        Write output to file (default is stdout)\n"

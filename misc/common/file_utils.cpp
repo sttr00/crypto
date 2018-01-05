@@ -312,7 +312,7 @@ bool decode_pkcs8(pkcs8_result &result, const char *filename, const void *data, 
  if (!root)
  {
   fprintf(stderr, "%s: Can't decode PKCS#8 structure\n", filename);
-  return nullptr;
+  return false;
  }
  bool success = false;
  result.data = nullptr;

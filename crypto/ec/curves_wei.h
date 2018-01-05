@@ -2,6 +2,7 @@
 #define __curves_wei_h__
 
 #include "ec_wei.h"
+#include <stdlib.h>
 
 struct curve_wei
 {
