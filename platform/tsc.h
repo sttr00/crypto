@@ -44,7 +44,11 @@ static __inline uint64_t read_tsc_impl()
 #ifndef read_tsc
 static __inline uint64_t read_tsc_dummy() { return 0; }
 #define read_tsc read_tsc_dummy
+#ifdef _MSC_VER
+#pragma message("Warning: This platform has no timestamp counter")
+#else
 #warning This platform has no timestamp counter
+#endif
 #endif
 
 #endif /* __tsc_h__ */
