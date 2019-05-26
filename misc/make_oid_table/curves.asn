@@ -1,0 +1,14 @@
+-- no-export
+primeCurves OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) ansi-x962(10045) curves(3) prime(1) }
+
+-- no-export
+certicomCurves OBJECT IDENTIFIER ::= { iso(1) identified-organization(3) certicom(132) curves(0) }
+
+secp192r1 OBJECT IDENTIFIER ::= { primeCurves 1 }
+secp192k1 OBJECT IDENTIFIER ::= { certicomCurves 31 }
+secp224r1 OBJECT IDENTIFIER ::= { certicomCurves 33 }
+secp224k1 OBJECT IDENTIFIER ::= { certicomCurves 32 }
+secp256r1 OBJECT IDENTIFIER ::= { primeCurves 7 }
+secp256k1 OBJECT IDENTIFIER ::= { certicomCurves 10 }
+secp384r1 OBJECT IDENTIFIER ::= { certicomCurves 34 }
+secp521r1 OBJECT IDENTIFIER ::= { certicomCurves 35 }

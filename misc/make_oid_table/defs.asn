@@ -26,10 +26,10 @@ rsaEncryption OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) rsadsi(11354
 
 id-dsa OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) x9-57(10040) x9algorithm(4) 1 }
 
-id-RSASSA-PSS  OBJECT IDENTIFIER  ::=  { pkcs-1 10 }
-
 -- was id-ecPublicKey
 id-ecdsa OBJECT IDENTIFIER ::= { iso(1) member-body(2) us(840) ansi-X9-62(10045) keyType(2) 1 }
+
+id-RSASSA-PSS  OBJECT IDENTIFIER  ::=  { pkcs-1 10 }
 
 -- ----------------
 -- hash algorithms
@@ -136,6 +136,8 @@ ecdsa-with-SHA224 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 1 }
 ecdsa-with-SHA256 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 2 }
 
 ecdsa-with-SHA384 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 3 }
+
+ecdsa-with-SHA512 OBJECT IDENTIFIER ::= { ecdsa-with-SHA2 4 }
 
 id-ecdsa-with-sha3-224 OBJECT IDENTIFIER ::= { sigAlgs 9 }
 
