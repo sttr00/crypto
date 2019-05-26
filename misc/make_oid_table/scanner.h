@@ -1,8 +1,8 @@
 #ifndef __scanner_h__
 #define __scanner_h__
 
-#include "oid_storage.h"
+class oid_parser;
 
-bool scan_file(named_oid_map &out, const char *filename);
+bool scan_file(oid_parser &parser, const char *filename);
 
 #endif

@@ -61,7 +61,7 @@ static string print_oid(named_oid_map::iterator it)
  return result;
 }
 
-bool scan_file(named_oid_map &out, const char *filename)
+bool scan_file(oid_parser &parser, const char *filename)
 {
  platform::file_t f = platform::open_file(filename);
  if (f == platform::INVALID_FILE)
@@ -72,8 +72,8 @@ bool scan_file(named_oid_map &out, const char *filename)
  char buf[4096];
  asn1_lexer lexer;
  token_list tl;
- oid_parser parser(out);
  int line_number = 1;
+ bool process_definition = false;
  for (;;)
  {
   int rd_size = platform::read_file(f, buf, sizeof(buf));
@@ -88,7 +88,6 @@ bool scan_file(named_oid_map &out, const char *filename)
    platform::close_file(f);
    break;
   }
-  bool process_definition = false;
   size_t size = rd_size;
   size_t pos = 0;
   while (pos < size)
@@ -98,7 +97,7 @@ bool scan_file(named_oid_map &out, const char *filename)
    if (result == asn1_lexer::RESULT_ERROR)
    {
     count_lines(line_number, buf, pos);
-    std::cerr << "Error #" << lexer.get_error() << " at line " << line_number << " pos " << pos;
+    std::cerr << "Error #" << lexer.get_error() << " at line " << line_number << " pos " << pos << '\n';
     platform::close_file(f);
     return false;
    }
@@ -110,7 +109,7 @@ bool scan_file(named_oid_map &out, const char *filename)
      if (!parser.process_token(lexer.get_token_type(), token))
      {
       count_lines(line_number, buf, prev_pos);
-      std::cerr << "Invalid OID definition at line " << line_number << " pos " << prev_pos;
+      std::cerr << "Invalid OID definition at line " << line_number << " pos " << prev_pos << '\n';
       platform::close_file(f);
       return false;
      }
