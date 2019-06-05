@@ -1,7 +1,7 @@
+#include "gen_k.h"
 #include <crypto/hmac.h>
 #include <crypto/sha256.h>
 #include <crypto/oid_const.h>
-#include <bigint/bigint.h>
 #include <platform/alloca.h>
 #include <string.h>
 #include <assert.h>

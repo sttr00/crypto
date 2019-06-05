@@ -1,5 +1,6 @@
 #include "pkc_dsa.h"
 #include "utils.h"
+#include "gen_k.h"
 #include <crypto/asn1/decoder.h>
 #include <crypto/asn1/encoder.h>
 #include <crypto/oid_const.h>
@@ -15,9 +16,7 @@ using namespace oid;
 static const size_t MIN_BITS = 512;
 static const size_t MAX_BITS = 16384;
 
-void *gen_k_init(uint8_t *k, uint8_t *v, const hash_def *hd, const bigint_t q, const bigint_t h, const void *x, int xsize);
-void gen_k_create(bigint_t result, uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac, const bigint_t q);
-void gen_k_next_key(uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac);
+static const int MAX_DIGEST_SIZE = 64;
 
 static const uint16_t dsa_oid_pairs[] =
 {
@@ -40,14 +39,6 @@ static const uint16_t bit_len_pairs[] =
  3072, 256
 };
 
-static const bool check_bit_len(int pbits, int qbits)
-{
- for (unsigned i = 0; i < countof(bit_len_pairs); i += 2)
-  if (pbits >= bit_len_pairs[i]-7 && pbits <= bit_len_pairs[i]+8 &&
-      qbits >= bit_len_pairs[i+1] && qbits <= bit_len_pairs[i+1]+8) return true;
- return false;
-}
-
 pkc_dsa::pkc_dsa()
 {
  p.clear();
@@ -55,7 +46,6 @@ pkc_dsa::pkc_dsa()
  q.clear();
  y.clear();
  x.clear();
- rng = nullptr;
  ytemp = nullptr;
 }
 
@@ -76,6 +66,14 @@ int pkc_dsa::hash_oid_to_sign_oid(int id)
  for (unsigned i = 0; i < countof(dsa_oid_pairs); i += 2)
   if (dsa_oid_pairs[i + 1] == id) return dsa_oid_pairs[i];
  return 0;
+}
+
+bool pkc_dsa::check_bit_len(int pbits, int qbits)
+{
+ for (unsigned i = 0; i < countof(bit_len_pairs); i += 2)
+  if (pbits >= bit_len_pairs[i]-7 && pbits <= bit_len_pairs[i]+8 &&
+      qbits >= bit_len_pairs[i+1] && qbits <= bit_len_pairs[i+1]+8) return true;
+ return false;
 }
 
 bool pkc_dsa::get_params(const asn1::element* &el, pkc_base::data_buffer &res_p, pkc_base::data_buffer &res_q, pkc_base::data_buffer &res_g)
@@ -196,7 +194,8 @@ bool pkc_dsa::set_private_key(const void *data, size_t size, const asn1::element
 
 bool pkc_dsa::create_signature(void *out, size_t &out_size,
                                const void *data, size_t data_size,
-                               const param_data *params, int param_count) const
+                               const param_data *params, int param_count,
+                               random_gen *rng) const
 {
  if (!x.data) return false;
  bool data_is_hash = false;
@@ -205,6 +204,7 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
  #else
  bool deterministic = true;
  #endif
+ bool raw_signature = false;
  int hash_alg = 0;
  for (int i = 0; i < param_count; i++)
   switch (params[i].type)
@@ -223,6 +223,10 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
     break;
    #endif
 
+   case PARAM_RAW_SIGNATURE:
+    GET_BOOL_PARAM(raw_signature);
+    break;
+
    default:
     return false;
   }
@@ -238,7 +242,11 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
   hd->func_init(ctx);
   hd->func_update(ctx, data, data_size);
   h = bigint_create_bytes_be(hd->func_final(ctx), hd->hash_size);
- } else h = bigint_create_bytes_be(data, data_size);
+ } else
+ {
+  if (data_size != hd->hash_size) return false;
+  h = bigint_create_bytes_be(data, data_size);
+ }
  
  uint8_t *kbuf, *vbuf;
  void *ctx_hmac = nullptr;
@@ -310,6 +318,30 @@ bool pkc_dsa::create_signature(void *out, size_t &out_size,
   bigint_destroy(s);
   bigint_destroy(r);
   return false;
+ }
+
+ if (raw_signature)
+ {
+  size_t req_size = q.size << 1;
+  if (out_size < req_size)
+  {
+   bigint_destroy(s);
+   bigint_destroy(r);
+   return false;
+  }
+  uint8_t *out_buf = static_cast<uint8_t*>(out);
+  memset(out_buf, 0, req_size);
+  int nsize = bigint_get_byte_count(r);
+  assert(nsize <= (int) q.size);
+  bigint_get_bytes_be(r, out_buf + q.size - nsize, nsize);
+  out_buf += q.size;
+  nsize = bigint_get_byte_count(s);
+  assert(nsize <= (int) q.size);
+  bigint_get_bytes_be(s, out_buf + q.size - nsize, nsize);
+  bigint_destroy(s);
+  bigint_destroy(r);
+  out_size = req_size;
+  return true;
  }
 
  size_t rsize, ssize;
@@ -397,16 +429,79 @@ asn1::element *pkc_dsa::create_params_struct(const param_data *params, int param
 
 bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
                                const void *data, size_t data_size,
-                               const asn1::element *alg_info) const
+                               const param_data *params, int param_count) const
 {
  if (!y.data) return false;
- int alg;
- const asn1::element *alg_param;
- if (!parse_alg_id(alg, alg_param, alg_info)) return false;
- int hash_alg = sign_oid_to_hash_oid(alg);
+
+ int hash_alg = 0;
+ const asn1::element *alg_info = nullptr;
+ bool data_is_hash = false;
+ bool raw_signature = false;
+
+ for (int i = 0; i < param_count; i++)
+  switch (params[i].type)
+  {
+   case PARAM_DATA_IS_HASH:
+    GET_BOOL_PARAM(data_is_hash);
+    break;
+
+   case PARAM_HASH_ALG:
+    GET_INT_PARAM(hash_alg);
+    break;
+
+   case PARAM_ALG_INFO:
+    if (params[i].size) return false;
+    alg_info = static_cast<const asn1::element*>(params[i].data);
+    break;
+
+   case PARAM_RAW_SIGNATURE:
+    GET_BOOL_PARAM(raw_signature);
+    break;
+
+   default:
+    return false;
+  }
+
+ if (alg_info)
+ {
+  int enc_alg;
+  const asn1::element *alg_param;
+  if (!parse_alg_id(enc_alg, alg_param, alg_info)) return false;
+  hash_alg = sign_oid_to_hash_oid(enc_alg);
+ }
+
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);
  if (!hd) return false;
+
+ uint8_t digest[MAX_DIGEST_SIZE];
+ const void *use_digest;
+ if (data_is_hash)
+ {
+  if (hd->hash_size != data_size) return false;
+  use_digest = data;
+ } else
+ {
+  assert(hd->hash_size <= (int) MAX_DIGEST_SIZE);
+  void *ctx = alloca(hd->context_size);
+  hd->func_init(ctx);
+  hd->func_update(ctx, data, data_size);
+  memcpy(digest, hd->func_final(ctx), hd->hash_size);
+  use_digest = digest;
+ }
+
+ if (raw_signature)
+ {
+  if (sig_size != (q.size << 1)) return false;
+  const uint8_t *in_buf = static_cast<const uint8_t*>(sig);
+  data_buffer r_buf, s_buf;
+  r_buf.data = in_buf;
+  r_buf.size = q.size;
+  s_buf.data = in_buf + q.size;
+  s_buf.size = q.size;
+  return verify_signature(r_buf, s_buf, use_digest, hd->hash_size);
+ }
+
  asn1::element *el_sig = asn1::decode(sig, sig_size, 0, nullptr);
  if (!el_sig) return false;
  bool result = false;
@@ -421,55 +516,57 @@ bool pkc_dsa::verify_signature(const void *sig, size_t sig_size,
    if (el && el->is_valid_positive_int())
    {
     get_integer(s_buf, el);
-    if (is_less(r_buf, q) && is_less(s_buf, q))
-    {
-     void *ctx = alloca(hd->context_size);
-     hd->func_init(ctx);
-     hd->func_update(ctx, data, data_size);
-     bigint_t h = bigint_create_bytes_be(hd->func_final(ctx), hd->hash_size);
-     bigint_t r = bigint_create_bytes_be(r_buf.data, r_buf.size);
-     bigint_t s = bigint_create_bytes_be(s_buf.data, s_buf.size);
-     bigint_t pv = bigint_create_bytes_be(p.data, p.size);
-     bigint_t qv = bigint_create_bytes_be(q.data, q.size);
-     bigint_t gv = bigint_create_bytes_be(g.data, g.size);
-     bigint_t yv = bigint_create_bytes_be(y.data, y.size);
-     bigint_t w = bigint_create(0);
-     bigint_t t1 = bigint_create(0);
-     bigint_t t2 = bigint_create(0);
-     #ifdef BROKEN_HASH_TRUNCATION
-     int shift = hd->hash_size - static_cast<int>(q.size);
-     if (shift > 0) bigint_rshift(h, h, shift<<3);
-     #else
-     int qbits = bigint_get_bit_count(qv);
-     int shift = (hd->hash_size<<3) - qbits;
-     if (shift > 0) bigint_rshift(h, h, shift);
-     if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
-     #endif
-     if (bigint_minv(w, s, qv))
-     {
-      bigint_mmul(t1, h, w, qv);
-      bigint_mmul(t2, r, w, qv);
-      bigint_mpow(t1, gv, t1, pv);
-      bigint_mpow(t2, yv, t2, pv);
-      bigint_mmul(t1, t1, t2, pv);
-      bigint_mod(t1, t1, qv);
-      result = bigint_cmp(t1, r) == 0;
-     }
-     bigint_destroy(t2);
-     bigint_destroy(t1);
-     bigint_destroy(w);
-     bigint_destroy(yv);
-     bigint_destroy(gv);
-     bigint_destroy(qv);
-     bigint_destroy(pv);
-     bigint_destroy(s);
-     bigint_destroy(r);
-     bigint_destroy(h);
-    }
+    result = verify_signature(r_buf, s_buf, use_digest, hd->hash_size);
    }
   }
  }
  asn1::delete_tree(el_sig);
+ return result;
+}
+
+bool pkc_dsa::verify_signature(data_buffer r_buf, data_buffer s_buf, const void *digest, size_t digest_size) const
+{
+ if (!(is_less(r_buf, q) && is_less(s_buf, q))) return false;
+ bigint_t h = bigint_create_bytes_be(digest, digest_size);
+ bigint_t r = bigint_create_bytes_be(r_buf.data, r_buf.size);
+ bigint_t s = bigint_create_bytes_be(s_buf.data, s_buf.size);
+ bigint_t pv = bigint_create_bytes_be(p.data, p.size);
+ bigint_t qv = bigint_create_bytes_be(q.data, q.size);
+ bigint_t gv = bigint_create_bytes_be(g.data, g.size);
+ bigint_t yv = bigint_create_bytes_be(y.data, y.size);
+ bigint_t w = bigint_create(0);
+ bigint_t t1 = bigint_create(0);
+ bigint_t t2 = bigint_create(0);
+ #ifdef BROKEN_HASH_TRUNCATION
+ int shift = static_cast<int>(digest_size) - static_cast<int>(q.size);
+ if (shift > 0) bigint_rshift(h, h, shift<<3);
+ #else
+ int qbits = bigint_get_bit_count(qv);
+ int shift = (static_cast<int>(digest_size)<<3) - qbits;
+ if (shift > 0) bigint_rshift(h, h, shift);
+ if (bigint_cmp(h, qv) > 0) bigint_sub(h, h, qv);
+ #endif
+ bool result = false;
+ if (bigint_minv(w, s, qv))
+ {
+  bigint_mmul(t1, h, w, qv);
+  bigint_mmul(t2, r, w, qv);
+  bigint_mpow(t1, gv, t1, pv);
+  bigint_mpow(t2, yv, t2, pv);
+  bigint_mmul(t1, t1, t2, pv);
+  bigint_mod(t1, t1, qv);
+  result = bigint_cmp(t1, r) == 0;
+ }
+ bigint_destroy(t2);
+ bigint_destroy(t1);
+ bigint_destroy(w);
+ bigint_destroy(yv);
+ bigint_destroy(gv);
+ bigint_destroy(qv);
+ bigint_destroy(pv);
+ bigint_destroy(s);
+ bigint_destroy(r);
+ bigint_destroy(h);
  return result;
 }
 
@@ -478,4 +575,9 @@ size_t pkc_dsa::get_max_signature_size() const
  // sequence: 2 header bytes
  // integers: 2 header bytes, 1 zero pad byte
  return (q.size << 1) + 8;
+}
+
+size_t pkc_dsa::get_min_signature_size() const
+{
+ return 8;
 }

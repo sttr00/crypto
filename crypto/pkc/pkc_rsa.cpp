@@ -253,11 +253,13 @@ static void mgf1(uint8_t *out, size_t out_size, const void *seed, size_t seed_le
 
 bool pkc_rsa::create_signature(void *out, size_t &out_size,
                                const void *data, size_t data_size,
-                               const param_data *params, int param_count) const
+                               const param_data *params, int param_count,
+                               random_gen *rng) const
 {
  if (!priv_exp.data || out_size < modulus.size) return false;
  uint8_t digest[MAX_DIGEST_SIZE];
  bool data_is_hash = false;
+ bool raw_signature = false;
  int wrap_alg = ID_RSA;
  int hash_alg = 0;
  int mg_hash_alg = 0;
@@ -289,11 +291,15 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
     if (salt.size >= 0x10000) return false;
     break;
 
+   case PARAM_RAW_SIGNATURE:
+    GET_BOOL_PARAM(raw_signature);
+    break;
+
    default:
     return false;
   }
 
- if (!hash_alg) return false;
+ if (!raw_signature && !hash_alg) return false;
  if (wrap_alg == ID_RSASSA_PSS)
  {
   // encoded PSS signature can have modulus.size or modulus.size-1 bytes,
@@ -343,6 +349,7 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
   masked[mask_size - salt.size - 1] ^= 1;
   masked[0] &= top_mask;
  } else
+ if (!raw_signature)
  {
   const oid_def *hash_oid_def = get(hash_alg);
   if (!hash_oid_def) return false;
@@ -393,6 +400,17 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
    return false;
   }
   assert(asn_size == encoded_size);  
+  in_size = modulus.size - 1;
+ } else
+ {
+  if (data_size + 11 > modulus.size) return false;
+  uint8_t *pad = static_cast<uint8_t*>(out);
+  size_t pad_len = modulus.size - data_size - 3;
+  // leading zero is removed, it's not needed for power_private
+  pad[0] = 1;
+  memset(pad + 1, 0xFF, pad_len);
+  pad[pad_len + 1] = 0;
+  memcpy(pad + pad_len + 2, data, data_size);
   in_size = modulus.size - 1;
  }
  return power_private(out, out_size, out, in_size);
@@ -454,7 +472,7 @@ asn1::element *pkc_rsa::create_params_struct(const param_data *params, int param
  {
   sign_id = hash_oid_to_sign_oid(hash_alg);
   if (!sign_id) return nullptr;
- } 
+ }
  const oid_def *sign_oid_def = get(sign_id);
  if (!sign_oid_def) return nullptr;
  asn1::element *el_oid = asn1::element::create(asn1::TYPE_OID, sign_oid_def->data, sign_oid_def->size);
@@ -536,7 +554,7 @@ static bool check_zero(const uint8_t *data, size_t size)
  return true;
 }
 
-static size_t decode_v15_padding(const uint8_t *data, size_t size)
+static size_t decode_v15_sign_padding(const uint8_t *data, size_t size)
 {
  if (data[0] || data[1] != 1) return 0;
  size_t pos = 2;
@@ -576,20 +594,56 @@ static const uint8_t *decode_v15_wrapping(const uint8_t *data, size_t size, int 
 
 bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
                                const void *data, size_t data_size,
-                               const asn1::element *alg_info) const
+                               const param_data *params, int param_count) const
 {
  if (!modulus.data) return false;
  const hash_def *hd_hash = nullptr;
  const hash_def *hd_mgf = nullptr;
  int salt_len = -1;
  uint8_t top_mask;
+ uint8_t digest[MAX_DIGEST_SIZE];
  bool result;
- int enc_alg;
- const asn1::element *alg_param;
- if (!parse_alg_id(enc_alg, alg_param, alg_info)) return false;
+ int enc_alg = ID_RSA, hash_alg = 0;
+ const asn1::element *alg_info = nullptr;
+ const asn1::element *alg_param = nullptr;
+ bool data_is_hash = false;
+ bool raw_signature = false;
+
+ for (int i = 0; i < param_count; i++)
+  switch (params[i].type)
+  {
+   case PARAM_DATA_IS_HASH:
+    GET_BOOL_PARAM(data_is_hash);
+    break;
+
+   case PARAM_HASH_ALG:
+    GET_INT_PARAM(hash_alg);
+    break;
+
+   case PARAM_ALG_INFO:
+    if (params[i].size) return false;
+    alg_info = static_cast<const asn1::element*>(params[i].data);
+    break;
+
+   case PARAM_RAW_SIGNATURE:
+    GET_BOOL_PARAM(raw_signature);
+    break;
+
+   default:
+    return false;
+  }
+
+ if (raw_signature)
+ {
+  if (sig_size != modulus.size) return false;
+  enc_alg = 0;
+  alg_info = nullptr;
+ }
+
+ if (alg_info && !parse_alg_id(enc_alg, alg_param, alg_info)) return false;
  if (enc_alg == ID_RSASSA_PSS)
  {
-  int hash_alg = ID_HASH_SHA1;
+  hash_alg = ID_HASH_SHA1;
   int mg_hash_alg = ID_HASH_SHA1;
   if (alg_param)
   {
@@ -627,15 +681,19 @@ bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
   if (static_cast<size_t>(salt_len) > sig_size - (hd_hash->hash_size + 2)) return false;
   int top_bit = bsr32(static_cast<const uint8_t*>(modulus.data)[0]);
   top_mask = 0xFF >> (8-top_bit);
+  if (data_is_hash && hd_hash->hash_size != data_size) return false;
+  assert(hd_hash->hash_size <= MAX_DIGEST_SIZE);
  } else
+ if (!raw_signature)
  {
-  int hash_alg = sign_oid_to_hash_oid(enc_alg);
+  if (alg_info) hash_alg = sign_oid_to_hash_oid(enc_alg);
   if (!hash_alg) return false;
   hd_hash = hash_factory(hash_alg);
   if (!hd_hash) return false;
+  if (data_is_hash && hd_hash->hash_size != data_size) return false;
+  assert(hd_hash->hash_size <= MAX_DIGEST_SIZE);
  }
 
- assert(hd_hash->hash_size <= MAX_DIGEST_SIZE); 
  size_t out_size = modulus.size;
  uint8_t *out = static_cast<uint8_t*>(alloca(out_size));
  if (!power_public(out, out_size, sig, sig_size)) return false;
@@ -661,34 +719,57 @@ bool pkc_rsa::verify_signature(const void *sig, size_t sig_size,
   size_t pad_len = mask_len - salt_len - 1;
   if (!check_zero(out, pad_len) || out[pad_len] != 1) return false;
 
-  uint8_t digest[MAX_DIGEST_SIZE];  
   void *ctx = alloca(hd_hash->context_size);
-  hd_hash->func_init(ctx);
-  hd_hash->func_update(ctx, data, data_size);
-  memcpy(digest, hd_hash->func_final(ctx), hd_hash->hash_size);
+  const void *use_digest;
+  if (data_is_hash)
+  {
+   use_digest = data;
+  } else
+  {
+   hd_hash->func_init(ctx);
+   hd_hash->func_update(ctx, data, data_size);
+   memcpy(digest, hd_hash->func_final(ctx), hd_hash->hash_size);
+   use_digest = digest;
+  }
   hd_hash->func_init(ctx);
   uint64_t ps1 = 0;
   hd_hash->func_update(ctx, &ps1, sizeof(ps1));
-  hd_hash->func_update(ctx, digest, hd_hash->hash_size);
+  hd_hash->func_update(ctx, use_digest, hd_hash->hash_size);
   hd_hash->func_update(ctx, out + pad_len + 1, salt_len);
   result = memcmp(hd_hash->func_final(ctx), hash, hd_hash->hash_size) == 0;
  } else
  {
-  size_t pad_len = decode_v15_padding(out, out_size);
+  size_t pad_len = decode_v15_sign_padding(out, out_size);
   if (!pad_len) return false;
-  size_t hash_size;
-  const void *hash = decode_v15_wrapping(out + pad_len, out_size - pad_len, hd_hash->id, hash_size);
-  if (!hash || static_cast<int>(hash_size) != hd_hash->hash_size) return false;
-  void *ctx = alloca(hd_hash->context_size);
-  hd_hash->func_init(ctx);
-  hd_hash->func_update(ctx, data, data_size);
-  result = memcmp(hd_hash->func_final(ctx), hash, hash_size) == 0;
+  if (raw_signature)
+  {
+   if (sig_size - pad_len != data_size) return false;
+   result = memcmp(out + pad_len, data, data_size) == 0;
+  } else
+  {
+   size_t hash_size;
+   const void *hash = decode_v15_wrapping(out + pad_len, out_size - pad_len, hd_hash->id, hash_size);
+   if (!hash || static_cast<int>(hash_size) != hd_hash->hash_size) return false;
+   const void *use_digest;
+   if (data_is_hash)
+   {
+    use_digest = data;
+   } else
+   {
+    void *ctx = alloca(hd_hash->context_size);
+    hd_hash->func_init(ctx);
+    hd_hash->func_update(ctx, data, data_size);
+    memcpy(digest, hd_hash->func_final(ctx), hd_hash->hash_size);
+    use_digest = digest;
+   }
+   result = memcmp(use_digest, hash, hash_size) == 0;
+  }
  }
 
  return result;
 }
 
-int pkc_rsa::get_modulus_bits() const
+int pkc_rsa::get_key_bits() const
 {
  return get_bits(modulus);
 }

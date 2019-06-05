@@ -51,8 +51,12 @@ static bool verify_certificate(const void *data, size_t size, const pkc_base &pk
     const asn1::element *sig = sig_alg->sibling;
     if (sig && sig->is_aligned_bit_string())
     {
+     pkc_base::param_data param;
+     param.type = pkc_base::PARAM_ALG_INFO;
+     param.data = sig_alg;
+     param.size = 0;
      result = pk.verify_signature(sig->data + 1, sig->size - 1,
-      root->data, tbs_cert->size + (tbs_cert->data - root->data), sig_alg);
+      root->data, tbs_cert->size + (tbs_cert->data - root->data), &param, 1);
      if (error) *error = result? 0 : ERR_VERIFICATION_FAILED;
     }
    }
@@ -76,7 +80,11 @@ static bool verify_data(const void *data, size_t size, const void *sig_data, siz
    const asn1::element *sig = sig_alg->sibling;
    if (sig && sig->is_aligned_bit_string())
    {
-    result = pk.verify_signature(sig->data + 1, sig->size - 1, data, size, sig_alg);
+    pkc_base::param_data param;
+    param.type = pkc_base::PARAM_ALG_INFO;
+    param.data = sig_alg;
+    param.size = 0;
+    result = pk.verify_signature(sig->data + 1, sig->size - 1, data, size, &param, 1);
     if (error) *error = result? 0 : ERR_VERIFICATION_FAILED;
    }
   }
@@ -100,7 +108,8 @@ static void *encode_asn1(asn1::element *el, size_t &size)
 }
 
 static bool sign_certificate(void* &out_data, size_t &out_size, const void *data, size_t size,
-                             const pkc_base &pk, const pkc_base::param_data params[], int param_count, int *error)
+                             const pkc_base &pk, const pkc_base::param_data params[], int param_count,
+                             random_gen *rng, int *error)
 {
  out_data = nullptr;
  out_size = 0;
@@ -164,7 +173,7 @@ static bool sign_certificate(void* &out_data, size_t &out_size, const void *data
  void *encoded_data = encode_asn1(tbs_cert, encoded_size);
  size_t sign_size = pk.get_max_signature_size();
  uint8_t *sign_data = static_cast<uint8_t*>(alloca(sign_size + 1));
- bool result = pk.create_signature(sign_data + 1, sign_size, encoded_data, encoded_size, params, param_count);
+ bool result = pk.create_signature(sign_data + 1, sign_size, encoded_data, encoded_size, params, param_count, rng);
  operator delete(encoded_data);
  if (!result)
  {
@@ -184,7 +193,8 @@ static bool sign_certificate(void* &out_data, size_t &out_size, const void *data
 }
 
 static bool sign_data(void* &out_data, size_t &out_size, const void *data, size_t size,
-                      const pkc_base &pk, const pkc_base::param_data params[], int param_count, int *error)
+                      const pkc_base &pk, const pkc_base::param_data params[], int param_count,
+                      random_gen *rng, int *error)
 {
  asn1::element *el_params = pk.create_params_struct(params, param_count, pkc_base::WHERE_SIGNATURE);
  if (!el_params)
@@ -195,7 +205,7 @@ static bool sign_data(void* &out_data, size_t &out_size, const void *data, size_
 
  size_t sign_size = pk.get_max_signature_size();
  uint8_t *sign_data = static_cast<uint8_t*>(alloca(sign_size + 1));
- if (!pk.create_signature(sign_data + 1, sign_size, data, size, params, param_count))
+ if (!pk.create_signature(sign_data + 1, sign_size, data, size, params, param_count, rng))
  {
   asn1::delete_tree(el_params);
   if (error) *error = ERR_SIGNING_FAILED;
@@ -727,7 +737,6 @@ int main(int argc, char *argv[])
   return 2;
  }
 
- pk->set_rng(&rng);
  if (action == ACTION_SIGN_CERT)
  {
   int error, cert_size;
@@ -736,7 +745,7 @@ int main(int argc, char *argv[])
   void *out_data;
   size_t out_size;
   init_sign_params(sign_params, sign_param_count, &rng);
-  sign_certificate(out_data, out_size, cert_data, cert_size, *pk, sign_params, sign_param_count, &error);
+  sign_certificate(out_data, out_size, cert_data, cert_size, *pk, sign_params, sign_param_count, &rng, &error);
   cleanup_sign_params(sign_params, sign_param_count);
   if (error) return print_error(error);
   puts("Signature Created");
@@ -751,7 +760,7 @@ int main(int argc, char *argv[])
   void *out_data;
   size_t out_size;
   init_sign_params(sign_params, sign_param_count, &rng);
-  sign_data(out_data, out_size, raw_data, raw_size, *pk, sign_params, sign_param_count, &error);
+  sign_data(out_data, out_size, raw_data, raw_size, *pk, sign_params, sign_param_count, &rng, &error);
   if (error) return print_error(error);
   puts("Signature Created");
   if (!save_output_file(out_file, out_data, out_size,

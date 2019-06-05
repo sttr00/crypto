@@ -9,8 +9,7 @@ class pkc_ecdsa : public pkc_base
  public:
   enum
   {
-   PARAM_HASH_ALG = 64,
-   PARAM_DETERMINISTIC = 65
+   PARAM_DETERMINISTIC = 64
   };
   
   pkc_ecdsa();
@@ -21,12 +20,15 @@ class pkc_ecdsa : public pkc_base
   virtual void set_rng(random_gen *rng) { this->rng = rng; }
   virtual bool create_signature(void *out, size_t &out_size,
                                 const void *data, size_t data_size,
-                                const param_data *params, int param_count) const;
+                                const param_data *params, int param_count,
+                                random_gen *rng) const;
   virtual asn1::element *create_params_struct(const param_data *params, int param_count, int where) const;
   virtual bool verify_signature(const void *sig, size_t sig_size,
                                 const void *data, size_t data_size,
-                                const asn1::element *param) const;
+                                const param_data *params, int param_count) const;
   virtual size_t get_max_signature_size() const;
+  virtual size_t get_min_signature_size() const;
+  virtual int get_key_bits() const { return key_bits; }
 
   static int sign_oid_to_hash_oid(int id);
   static int hash_oid_to_sign_oid(int id);
@@ -39,6 +41,7 @@ class pkc_ecdsa : public pkc_base
   bigint_t order;
   bigint_t priv;
   int curve_id;
+  int key_bits;
 
   void clear();
 };

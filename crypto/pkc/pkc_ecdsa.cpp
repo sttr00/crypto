@@ -1,5 +1,6 @@
 #include "pkc_ecdsa.h"
 #include "utils.h"
+#include "gen_k.h"
 #include <crypto/asn1/decoder.h>
 #include <crypto/asn1/encoder.h>
 #include <crypto/ec/curves_wei.h>
@@ -30,10 +31,6 @@
 using namespace oid;
 
 #define countof(a) (sizeof(a)/sizeof(a[0]))
-
-void *gen_k_init(uint8_t *k, uint8_t *v, const hash_def *hd, const bigint_t q, const bigint_t h, const void *x, int xsize);
-void gen_k_create(bigint_t result, uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac, const bigint_t q);
-void gen_k_next_key(uint8_t *k, uint8_t *v, int hash_size, void *ctx_hmac);
 
 static const uint16_t ecdsa_oid_pairs[] =
 {
@@ -99,6 +96,7 @@ pkc_ecdsa::pkc_ecdsa()
  order = priv = nullptr;
  rng = nullptr;
  curve_id = 0;
+ key_bits = 0;
 }
 
 pkc_ecdsa::~pkc_ecdsa()
@@ -164,6 +162,7 @@ bool pkc_ecdsa::set_public_key(const void *data, size_t size, const asn1::elemen
  order = new_order;
  priv = nullptr;
  curve_id = curve->id;
+ key_bits = curve->bits;
  return true;
 } 
 
@@ -199,6 +198,7 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
   el = el->sibling;
   init_curve(&new_def, &new_gen, &new_order, curve);
   curve_id = curve->id;
+  key_bits = curve->bits;
  } else
  {
   // PKCS #8: get curve from params
@@ -206,6 +206,7 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
   if (!curve) goto fin;
   init_curve(&new_def, &new_gen, &new_order, curve);
   curve_id = curve->id;
+  key_bits = curve->bits;
  }
  if (el_priv->size != (size_t) bigint_get_byte_count(new_order)) goto fin;
  new_priv = bigint_create_bytes_be(el_priv->data, el_priv->size);
@@ -258,7 +259,8 @@ bool pkc_ecdsa::set_private_key(const void *data, size_t size, const asn1::eleme
 
 bool pkc_ecdsa::create_signature(void *out, size_t &out_size,
                                  const void *data, size_t data_size,
-                                 const param_data *params, int param_count) const
+                                 const param_data *params, int param_count,
+                                 random_gen *rng) const
 {
  if (!priv) return false;
  bool data_is_hash = false;
@@ -437,16 +439,47 @@ asn1::element *pkc_ecdsa::create_params_struct(const param_data *params, int par
 
 bool pkc_ecdsa::verify_signature(const void *sig, size_t sig_size,
                                  const void *data, size_t data_size,
-                                 const asn1::element *alg_info) const
+                                 const param_data *params, int param_count) const
 {
  if (!pub.x) return false;
- int alg;
- const asn1::element *alg_param;
- if (!parse_alg_id(alg, alg_param, alg_info)) return false;
- int hash_alg = sign_oid_to_hash_oid(alg);
+
+ int hash_alg = 0;
+ const asn1::element *alg_info = nullptr;
+ bool data_is_hash = false;
+
+ for (int i = 0; i < param_count; i++)
+  switch (params[i].type)
+  {
+   case PARAM_DATA_IS_HASH:
+    GET_BOOL_PARAM(data_is_hash);
+    break;
+
+   case PARAM_HASH_ALG:
+    GET_INT_PARAM(hash_alg);
+    break;
+
+   case PARAM_ALG_INFO:
+    if (params[i].size) return false;
+    alg_info = static_cast<const asn1::element*>(params[i].data);
+    break;
+   
+   default:
+    return false;
+  }
+
+ if (alg_info)
+ { 
+  int enc_alg;
+  const asn1::element *alg_param;
+  if (!parse_alg_id(enc_alg, alg_param, alg_info)) return false;
+  hash_alg = sign_oid_to_hash_oid(enc_alg);
+ }
+
  if (!hash_alg) return false;
  const hash_def *hd = hash_factory(hash_alg);
  if (!hd) return false;
+ if (data_is_hash && hd->hash_size != data_size) return false;
+
  asn1::element *el_sig = asn1::decode(sig, sig_size, 0, nullptr);
  if (!el_sig) return false;
  bool result = false;
@@ -464,10 +497,18 @@ bool pkc_ecdsa::verify_signature(const void *sig, size_t sig_size,
      bigint_t s = bigint_create_bytes_be(el->data, el->size);
      if (!bigint_eq_word(s, 0) && bigint_cmp(s, order) < 0)
      {
-      void *ctx = alloca(hd->context_size);
-      hd->func_init(ctx);
-      hd->func_update(ctx, data, data_size);
-      bigint_t h = bigint_create_bytes_be(hd->func_final(ctx), hd->hash_size);
+      bigint_t h;
+      if (data_is_hash)
+      {
+       h = bigint_create_bytes_be(data, hd->hash_size);
+      } else
+      {
+       void *ctx = alloca(hd->context_size);
+       hd->func_init(ctx);
+       hd->func_update(ctx, data, data_size);
+       h = bigint_create_bytes_be(hd->func_final(ctx), hd->hash_size);
+      }
+      
       int qbits = bigint_get_bit_count(order);
       int shift = (hd->hash_size<<3) - qbits;
       if (shift > 0) bigint_rshift(h, h, shift);
@@ -515,4 +556,9 @@ size_t pkc_ecdsa::get_max_signature_size() const
  // integers: 2 header bytes, 1 zero pad byte
  if (!order) return 0;
  return (bigint_get_byte_count(order) << 1) + 8;
+}
+
+size_t pkc_ecdsa::get_min_signature_size() const
+{
+ return 8;
 }

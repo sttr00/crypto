@@ -30,6 +30,8 @@ class pkc_base
   enum
   {
    PARAM_DATA_IS_HASH,
+   PARAM_HASH_ALG,
+   PARAM_ALG_INFO
   };
 
   enum
@@ -43,15 +45,17 @@ class pkc_base
   virtual int  get_id() const = 0;
   virtual bool set_public_key(const void *data, size_t size, const asn1::element *param) = 0;
   virtual bool set_private_key(const void *data, size_t size, const asn1::element *param) = 0;
-  virtual void set_rng(random_gen *rng) = 0;
   virtual bool create_signature(void *out, size_t &out_size,
                                 const void *hash, size_t hash_size,
-                                const param_data *params, int param_count) const = 0;
+                                const param_data *params, int param_count,
+                                random_gen *rng) const = 0;
   virtual asn1::element *create_params_struct(const param_data *params, int param_count, int where) const = 0;
   virtual bool verify_signature(const void *sig, size_t sig_size,
                                 const void *data, size_t data_size,
-                                const asn1::element *alg_info) const = 0;
+                                const param_data *params, int param_count) const = 0;
   virtual size_t get_max_signature_size() const = 0;
+  virtual size_t get_min_signature_size() const = 0;
+  virtual int get_key_bits() const = 0;
 
  private:
   pkc_base(const pkc_base &);
