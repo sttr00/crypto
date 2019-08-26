@@ -393,7 +393,7 @@ bool pkc_rsa::create_signature(void *out, size_t &out_size,
   pad[0] = 1;
   memset(pad + 1, 0xFF, pad_len);
   pad[pad_len + 1] = 0;
-  size_t encoded_size;
+  size_t encoded_size = asn_size;
   if (!asn1::encode_def_length(pad + pad_len + 2, encoded_size, &el_root))
   {
    assert(0);
